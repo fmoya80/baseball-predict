@@ -3,7 +3,7 @@ from pathlib import Path
 DATA_DIR = Path("data/interim")
 
 START_DATE = "2026-03-21"
-END_DATE = "2026-04-09"
+END_DATE = "2026-04-12"
 
 DATE_RANGE_LABEL = f"{START_DATE}_to_{END_DATE}"
 
