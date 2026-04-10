@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import time
-from pathlib import Path
 from typing import Any, Dict, List, Optional
+from src.config import GAMES_SCHEDULE_FILE, STARTER_GAME_LOGS_FILE
 
 import pandas as pd
 import requests
@@ -427,8 +427,7 @@ def build_starter_game_logs(
 
 
 if __name__ == "__main__":
-    project_root = Path(__file__).resolve().parents[1]
-    input_path = project_root / "data" / "interim" / "games_schedule_2026-03-27_to_2026-04-07.csv"
+    input_path = GAMES_SCHEDULE_FILE
 
     print(f"Leyendo games_schedule desde: {input_path}")
 
@@ -445,7 +444,7 @@ if __name__ == "__main__":
 
     starter_game_logs = add_starter_rolling_features(starter_game_logs)
 
-    output_path = project_root / "data" / "interim" / "starter_game_logs_2026-03-27_to_2026-04-07.csv"
+    output_path = STARTER_GAME_LOGS_FILE
     starter_game_logs.to_csv(output_path, index=False)
 
     print("\nstarter_game_logs shape:", starter_game_logs.shape)

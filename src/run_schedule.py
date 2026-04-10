@@ -1,4 +1,5 @@
 from src.schedule import build_schedule_for_range
+from src.config import START_DATE, END_DATE
 from src.pregame_snapshot import build_pregame_team_snapshot, save_pregame_snapshot
 from src.team_logs import (
     build_team_game_logs,
@@ -8,9 +9,9 @@ from src.team_logs import (
 )
 
 
-if __name__ == "__main__":
-    start_date = "2026-04-02"
-    end_date = "2026-04-07"
+def main():
+    start_date = START_DATE
+    end_date = END_DATE
 
     df_games = build_schedule_for_range(start_date, end_date)
 
@@ -18,10 +19,10 @@ if __name__ == "__main__":
     validate_team_game_logs(df_team_logs, df_games)
 
     df_team_logs = add_team_rolling_features(df_team_logs, windows=[3, 5])
-    save_team_game_logs(df_team_logs, f"team_game_logs_{start_date}_to_{end_date}.csv")
+    save_team_game_logs(df_team_logs)
 
     df_snapshot = build_pregame_team_snapshot(df_games, df_team_logs)
-    save_pregame_snapshot(df_snapshot, f"pregame_team_snapshot_{start_date}_to_{end_date}.csv")
+    save_pregame_snapshot(df_snapshot)
 
     print("games_schedule shape:", df_games.shape)
     print("team_game_logs shape:", df_team_logs.shape)
@@ -42,3 +43,7 @@ if __name__ == "__main__":
     ]
 
     print(df_snapshot[snapshot_preview_cols].head(20))
+
+
+if __name__ == "__main__":
+    main()

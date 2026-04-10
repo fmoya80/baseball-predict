@@ -1,8 +1,13 @@
 from pathlib import Path
 import pandas as pd
 
+from src.config import GAMES_SCHEDULE_FILE, TEAM_GAME_LOGS_FILE
 
-INTERIM_DIR = Path("data/interim")
+DEFAULT_OUTPUT_DIR = TEAM_GAME_LOGS_FILE.parent
+
+
+def load_games_schedule() -> pd.DataFrame:
+    return pd.read_csv(GAMES_SCHEDULE_FILE)
 
 
 def build_team_game_logs(games_df: pd.DataFrame) -> pd.DataFrame:
@@ -169,8 +174,30 @@ def add_team_rolling_features(team_logs_df: pd.DataFrame, windows: list[int] = [
     return df
 
 
-def save_team_game_logs(team_logs_df: pd.DataFrame, file_name: str) -> Path:
-    INTERIM_DIR.mkdir(parents=True, exist_ok=True)
-    output_path = INTERIM_DIR / file_name
+def save_team_game_logs(team_logs_df: pd.DataFrame, file_name: str | Path = TEAM_GAME_LOGS_FILE) -> Path:
+    output_path = Path(file_name)
+    if output_path.parent == Path("."):
+        output_path = DEFAULT_OUTPUT_DIR / output_path
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     team_logs_df.to_csv(output_path, index=False, encoding="utf-8")
     return output_path
+
+
+def main():
+    games_df = load_games_schedule()
+
+    print("games_df shape:", games_df.shape)
+
+    team_logs_df = build_team_game_logs(games_df)
+    validate_team_game_logs(team_logs_df, games_df)
+    team_logs_df = add_team_rolling_features(team_logs_df, windows=[3, 5])
+
+    output_path = save_team_game_logs(team_logs_df, TEAM_GAME_LOGS_FILE)
+
+    print("team_game_logs shape:", team_logs_df.shape)
+    print(f"\nArchivo guardado en: {output_path}")
+
+
+if __name__ == "__main__":
+    main()

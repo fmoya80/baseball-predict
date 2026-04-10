@@ -1,8 +1,19 @@
 from pathlib import Path
 import pandas as pd
 
+from src.config import (
+    GAMES_SCHEDULE_FILE,
+    TEAM_GAME_LOGS_FILE,
+    PREGAME_TEAM_SNAPSHOT_FILE,
+)
 
-INTERIM_DIR = Path("data/interim")
+DEFAULT_OUTPUT_DIR = PREGAME_TEAM_SNAPSHOT_FILE.parent
+
+
+def load_inputs() -> tuple[pd.DataFrame, pd.DataFrame]:
+    games_df = pd.read_csv(GAMES_SCHEDULE_FILE)
+    team_logs_df = pd.read_csv(TEAM_GAME_LOGS_FILE)
+    return games_df, team_logs_df
 
 
 def build_pregame_team_snapshot(games_df: pd.DataFrame, team_logs_df: pd.DataFrame) -> pd.DataFrame:
@@ -84,8 +95,26 @@ def build_pregame_team_snapshot(games_df: pd.DataFrame, team_logs_df: pd.DataFra
     return snapshot
 
 
-def save_pregame_snapshot(df: pd.DataFrame, file_name: str) -> Path:
-    INTERIM_DIR.mkdir(parents=True, exist_ok=True)
-    output_path = INTERIM_DIR / file_name
+def save_pregame_snapshot(df: pd.DataFrame, file_name: str | Path = PREGAME_TEAM_SNAPSHOT_FILE) -> Path:
+    output_path = Path(file_name)
+    if output_path.parent == Path("."):
+        output_path = DEFAULT_OUTPUT_DIR / output_path
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output_path, index=False, encoding="utf-8")
     return output_path
+
+
+def main():
+    games_df, team_logs_df = load_inputs()
+    snapshot_df = build_pregame_team_snapshot(games_df, team_logs_df)
+    output_path = save_pregame_snapshot(snapshot_df, PREGAME_TEAM_SNAPSHOT_FILE)
+
+    print("games_df shape:", games_df.shape)
+    print("team_logs_df shape:", team_logs_df.shape)
+    print("pregame_team_snapshot shape:", snapshot_df.shape)
+    print(f"\nArchivo guardado en: {output_path}")
+
+
+if __name__ == "__main__":
+    main()
