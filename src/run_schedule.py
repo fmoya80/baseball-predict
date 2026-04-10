@@ -9,7 +9,7 @@ from src.team_logs import (
 
 
 if __name__ == "__main__":
-    start_date = "2026-03-27"
+    start_date = "2026-04-02"
     end_date = "2026-04-07"
 
     df_games = build_schedule_for_range(start_date, end_date)
