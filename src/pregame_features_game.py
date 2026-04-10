@@ -78,10 +78,16 @@ def prepare_batting_history(batting_df: pd.DataFrame) -> pd.DataFrame:
         "team_name",
         "games_played_last_3",
         "games_played_last_5",
+        "games_played_season_to_date",
         "runs_scored_last_3_avg",
         "runs_scored_last_5_avg",
+        "runs_scored_season_to_date",
         "hits_last_3_avg",
         "hits_last_5_avg",
+        "hits_season_to_date",
+        "at_bats_last_3_avg",
+        "at_bats_last_5_avg",
+        "at_bats_season_to_date",
         "doubles_last_3_avg",
         "doubles_last_5_avg",
         "triples_last_3_avg",
@@ -90,25 +96,86 @@ def prepare_batting_history(batting_df: pd.DataFrame) -> pd.DataFrame:
         "home_runs_last_5_avg",
         "walks_last_3_avg",
         "walks_last_5_avg",
+        "walks_season_to_date",
         "strikeouts_last_3_avg",
         "strikeouts_last_5_avg",
         "singles_last_3_avg",
         "singles_last_5_avg",
         "total_bases_last_3_avg",
         "total_bases_last_5_avg",
+        "total_bases_season_to_date",
         "avg_game_last_3_avg",
         "avg_game_last_5_avg",
+        "avg_game_season_to_date",
         "obp_game_last_3_avg",
         "obp_game_last_5_avg",
+        "obp_game_season_to_date",
         "slg_game_last_3_avg",
         "slg_game_last_5_avg",
+        "slg_game_season_to_date",
         "ops_game_last_3_avg",
         "ops_game_last_5_avg",
+        "ops_game_season_to_date",
+        "iso_game_last_3_avg",
+        "iso_game_last_5_avg",
+        "iso_game_season_to_date",
     ]
 
     history_df = batting_df[batting_cols].copy()
     history_df = history_df.sort_values(["team_id", "gamePk"]).reset_index(drop=True)
     return history_df
+
+def safe_era_from_avg(earned_runs_avg, outs_recorded_avg):
+    """
+    Calcula ERA a partir de promedios por juego:
+    ERA = 27 * ER / Outs
+
+    Usamos outs en vez de innings para evitar problemas de formato.
+    """
+    if pd.isna(earned_runs_avg) or pd.isna(outs_recorded_avg):
+        return pd.NA
+
+    if outs_recorded_avg == 0:
+        return pd.NA
+
+    return round((27 * earned_runs_avg) / outs_recorded_avg, 2)
+
+
+def add_derived_metrics(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Agrega métricas derivadas que no vienen explícitas en las tablas base.
+    """
+    # Pitchers: ERA rolling
+    for side in ["away", "home"]:
+        df[f"{side}_starter_era_last_3"] = df.apply(
+            lambda row: safe_era_from_avg(
+                row.get(f"{side}_starter_earned_runs_last_3_avg"),
+                row.get(f"{side}_starter_outs_recorded_last_3_avg"),
+            ),
+            axis=1,
+        )
+
+        df[f"{side}_starter_era_last_5"] = df.apply(
+            lambda row: safe_era_from_avg(
+                row.get(f"{side}_starter_earned_runs_last_5_avg"),
+                row.get(f"{side}_starter_outs_recorded_last_5_avg"),
+            ),
+            axis=1,
+        )
+
+    # Offense: ISO rolling
+    for side in ["away", "home"]:
+        df[f"{side}_offense_iso_game_last_3_avg"] = (
+            df[f"{side}_offense_slg_game_last_3_avg"]
+            - df[f"{side}_offense_avg_game_last_3_avg"]
+        ).round(3)
+
+        df[f"{side}_offense_iso_game_last_5_avg"] = (
+            df[f"{side}_offense_slg_game_last_5_avg"]
+            - df[f"{side}_offense_avg_game_last_5_avg"]
+        ).round(3)
+
+    return df
 
 def get_latest_pitcher_snapshot(
     pitcher_id,
@@ -242,10 +309,16 @@ def build_offense_snapshot_for_side(
         "team_name": f"{side}_offense_team_name",
         "games_played_last_3": f"{side}_offense_games_played_last_3",
         "games_played_last_5": f"{side}_offense_games_played_last_5",
+        "games_played_season_to_date": f"{side}_offense_games_played_season_to_date",
         "runs_scored_last_3_avg": f"{side}_offense_runs_scored_last_3_avg",
         "runs_scored_last_5_avg": f"{side}_offense_runs_scored_last_5_avg",
+        "runs_scored_season_to_date": f"{side}_offense_runs_scored_season_to_date",
         "hits_last_3_avg": f"{side}_offense_hits_last_3_avg",
         "hits_last_5_avg": f"{side}_offense_hits_last_5_avg",
+        "hits_season_to_date": f"{side}_offense_hits_season_to_date",
+        "at_bats_last_3_avg": f"{side}_offense_at_bats_last_3_avg",
+        "at_bats_last_5_avg": f"{side}_offense_at_bats_last_5_avg",
+        "at_bats_season_to_date": f"{side}_offense_at_bats_season_to_date",
         "doubles_last_3_avg": f"{side}_offense_doubles_last_3_avg",
         "doubles_last_5_avg": f"{side}_offense_doubles_last_5_avg",
         "triples_last_3_avg": f"{side}_offense_triples_last_3_avg",
@@ -254,20 +327,29 @@ def build_offense_snapshot_for_side(
         "home_runs_last_5_avg": f"{side}_offense_home_runs_last_5_avg",
         "walks_last_3_avg": f"{side}_offense_walks_last_3_avg",
         "walks_last_5_avg": f"{side}_offense_walks_last_5_avg",
+        "walks_season_to_date": f"{side}_offense_walks_season_to_date",
         "strikeouts_last_3_avg": f"{side}_offense_strikeouts_last_3_avg",
         "strikeouts_last_5_avg": f"{side}_offense_strikeouts_last_5_avg",
         "singles_last_3_avg": f"{side}_offense_singles_last_3_avg",
         "singles_last_5_avg": f"{side}_offense_singles_last_5_avg",
         "total_bases_last_3_avg": f"{side}_offense_total_bases_last_3_avg",
         "total_bases_last_5_avg": f"{side}_offense_total_bases_last_5_avg",
+        "total_bases_season_to_date": f"{side}_offense_total_bases_season_to_date",
         "avg_game_last_3_avg": f"{side}_offense_avg_game_last_3_avg",
         "avg_game_last_5_avg": f"{side}_offense_avg_game_last_5_avg",
+        "avg_game_season_to_date": f"{side}_offense_avg_game_season_to_date",
         "obp_game_last_3_avg": f"{side}_offense_obp_game_last_3_avg",
         "obp_game_last_5_avg": f"{side}_offense_obp_game_last_5_avg",
+        "obp_game_season_to_date": f"{side}_offense_obp_game_season_to_date",
         "slg_game_last_3_avg": f"{side}_offense_slg_game_last_3_avg",
         "slg_game_last_5_avg": f"{side}_offense_slg_game_last_5_avg",
+        "slg_game_season_to_date": f"{side}_offense_slg_game_season_to_date",
         "ops_game_last_3_avg": f"{side}_offense_ops_game_last_3_avg",
         "ops_game_last_5_avg": f"{side}_offense_ops_game_last_5_avg",
+        "ops_game_season_to_date": f"{side}_offense_ops_game_season_to_date",
+        "iso_game_last_3_avg": f"{side}_offense_iso_game_last_3_avg",
+        "iso_game_last_5_avg": f"{side}_offense_iso_game_last_5_avg",
+        "iso_game_season_to_date": f"{side}_offense_iso_game_season_to_date",
     }
 
     merged = merged.rename(columns=rename_map)
@@ -418,6 +500,8 @@ def main():
         pregame_features_game["home_offense_games_played_last_5"].fillna(0) > 0
     ).astype(int)
 
+    pregame_features_game = add_derived_metrics(pregame_features_game)
+
     validate_output(pregame_features_game)
 
     pregame_features_game.to_csv(PREGAME_FEATURES_GAME_FILE, index=False)
@@ -433,20 +517,20 @@ def main():
         "game_date",
         "away_team_name",
         "home_team_name",
-        "away_offense_context_found_flag",
-        "home_offense_context_found_flag",
-        "away_offense_games_played_last_3",
-        "home_offense_games_played_last_3",
-        "away_offense_runs_scored_last_3_avg",
-        "home_offense_runs_scored_last_3_avg",
-        "away_offense_hits_last_3_avg",
-        "home_offense_hits_last_3_avg",
-        "away_offense_ops_game_last_3_avg",
-        "home_offense_ops_game_last_3_avg",
-        "away_offense_runs_scored_last_5_avg",
-        "home_offense_runs_scored_last_5_avg",
+        "away_offense_games_played_season_to_date",
+        "home_offense_games_played_season_to_date",
+        "away_offense_ops_game_season_to_date",
+        "home_offense_ops_game_season_to_date",
+        "away_offense_iso_game_season_to_date",
+        "home_offense_iso_game_season_to_date",
         "away_offense_ops_game_last_5_avg",
         "home_offense_ops_game_last_5_avg",
+        "away_offense_iso_game_last_5_avg",
+        "home_offense_iso_game_last_5_avg",
+        "away_offense_ops_game_last_3_avg",
+        "home_offense_ops_game_last_3_avg",
+        "away_offense_iso_game_last_3_avg",
+        "home_offense_iso_game_last_3_avg",
         "away_offense_has_last_3_data_flag",
         "home_offense_has_last_3_data_flag",
     ]

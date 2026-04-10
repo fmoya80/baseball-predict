@@ -33,6 +33,14 @@ def safe_divide(numerator, denominator):
         return None
     return numerator / denominator
 
+def safe_round(value, digits=3):
+    """
+    Redondea si el valor existe.
+    """
+    if value is None or pd.isna(value):
+        return None
+    return round(value, digits)
+
 
 def parse_batting_stats(stats_dict: dict) -> dict:
     """
@@ -184,11 +192,16 @@ def add_batting_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     Agrega rolling pregame por equipo.
     Usamos shift(1) para que el partido actual no contamine su propio snapshot.
+
+    Reglas:
+    - métricas de conteo: promedio por juego en ventanas L3 y L5
+    - métricas de tasa: construidas desde sumas rolling
+    - métricas season: construidas desde acumulados season-to-date pregame
     """
     df = df.copy()
     df = df.sort_values(["team_id", "game_date", "gamePk"]).reset_index(drop=True)
 
-    rolling_metrics = [
+    avg_metrics = [
         "runs_scored",
         "at_bats",
         "hits",
@@ -201,16 +214,13 @@ def add_batting_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
         "sac_flies",
         "singles",
         "total_bases",
-        "avg_game",
-        "obp_game",
-        "slg_game",
-        "ops_game",
     ]
 
     windows = [3, 5]
 
     for window in windows:
-        for col in rolling_metrics:
+        # 1) métricas promedio por juego
+        for col in avg_metrics:
             new_col = f"{col}_last_{window}_avg"
 
             df[new_col] = (
@@ -218,11 +228,157 @@ def add_batting_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
                 .transform(lambda s: s.shift(1).rolling(window=window, min_periods=1).mean())
             )
 
+        # 2) métricas acumuladas rolling necesarias para tasas
+        sum_metrics = [
+            "hits",
+            "at_bats",
+            "walks",
+            "hit_by_pitch",
+            "sac_flies",
+            "total_bases",
+        ]
+
+        for col in sum_metrics:
+            sum_col = f"{col}_last_{window}_sum"
+
+            df[sum_col] = (
+                df.groupby("team_id")[col]
+                .transform(lambda s: s.shift(1).rolling(window=window, min_periods=1).sum())
+            )
+
+        # 3) cantidad de juegos previos usados
         count_col = f"games_played_last_{window}"
         df[count_col] = (
             df.groupby("team_id")["gamePk"]
             .transform(lambda s: s.shift(1).rolling(window=window, min_periods=1).count())
         )
+
+        # 4) tasas construidas desde sumas rolling
+        avg_col = f"avg_game_last_{window}_avg"
+        obp_col = f"obp_game_last_{window}_avg"
+        slg_col = f"slg_game_last_{window}_avg"
+        ops_col = f"ops_game_last_{window}_avg"
+        iso_col = f"iso_game_last_{window}_avg"
+
+        hits_sum_col = f"hits_last_{window}_sum"
+        at_bats_sum_col = f"at_bats_last_{window}_sum"
+        walks_sum_col = f"walks_last_{window}_sum"
+        hbp_sum_col = f"hit_by_pitch_last_{window}_sum"
+        sf_sum_col = f"sac_flies_last_{window}_sum"
+        tb_sum_col = f"total_bases_last_{window}_sum"
+
+        avg_values = []
+        obp_values = []
+        slg_values = []
+        ops_values = []
+        iso_values = []
+
+        for _, row in df.iterrows():
+            hits_sum = row[hits_sum_col]
+            at_bats_sum = row[at_bats_sum_col]
+            walks_sum = row[walks_sum_col]
+            hbp_sum = row[hbp_sum_col]
+            sf_sum = row[sf_sum_col]
+            tb_sum = row[tb_sum_col]
+
+            avg_value = safe_divide(hits_sum, at_bats_sum)
+
+            obp_numerator = hits_sum + walks_sum + hbp_sum
+            obp_denominator = at_bats_sum + walks_sum + hbp_sum + sf_sum
+            obp_value = safe_divide(obp_numerator, obp_denominator)
+
+            slg_value = safe_divide(tb_sum, at_bats_sum)
+
+            ops_value = None
+            if obp_value is not None and slg_value is not None:
+                ops_value = obp_value + slg_value
+
+            iso_value = None
+            if slg_value is not None and avg_value is not None:
+                iso_value = slg_value - avg_value
+
+            avg_values.append(safe_round(avg_value))
+            obp_values.append(safe_round(obp_value))
+            slg_values.append(safe_round(slg_value))
+            ops_values.append(safe_round(ops_value))
+            iso_values.append(safe_round(iso_value))
+
+        df[avg_col] = avg_values
+        df[obp_col] = obp_values
+        df[slg_col] = slg_values
+        df[ops_col] = ops_values
+        df[iso_col] = iso_values
+
+    # 5) acumulados season-to-date pregame
+    season_sum_metrics = [
+        "runs_scored",
+        "at_bats",
+        "hits",
+        "doubles",
+        "triples",
+        "home_runs",
+        "walks",
+        "strikeouts",
+        "hit_by_pitch",
+        "sac_flies",
+        "singles",
+        "total_bases",
+    ]
+
+    for col in season_sum_metrics:
+        season_col = f"{col}_season_to_date"
+
+        df[season_col] = (
+            df.groupby("team_id")[col]
+            .transform(lambda s: s.cumsum().shift(1))
+        )
+
+    df["games_played_season_to_date"] = (
+        df.groupby("team_id")["gamePk"]
+        .transform(lambda s: s.expanding().count().shift(1))
+    )
+
+    season_avg_values = []
+    season_obp_values = []
+    season_slg_values = []
+    season_ops_values = []
+    season_iso_values = []
+
+    for _, row in df.iterrows():
+        hits_sum = row["hits_season_to_date"]
+        at_bats_sum = row["at_bats_season_to_date"]
+        walks_sum = row["walks_season_to_date"]
+        hbp_sum = row["hit_by_pitch_season_to_date"]
+        sf_sum = row["sac_flies_season_to_date"]
+        tb_sum = row["total_bases_season_to_date"]
+
+        avg_value = safe_divide(hits_sum, at_bats_sum)
+
+        obp_numerator = hits_sum + walks_sum + hbp_sum
+        obp_denominator = at_bats_sum + walks_sum + hbp_sum + sf_sum
+        obp_value = safe_divide(obp_numerator, obp_denominator)
+
+        slg_value = safe_divide(tb_sum, at_bats_sum)
+
+        ops_value = None
+        if obp_value is not None and slg_value is not None:
+            ops_value = obp_value + slg_value
+
+        iso_value = None
+        if slg_value is not None and avg_value is not None:
+            iso_value = slg_value - avg_value
+
+        season_avg_values.append(safe_round(avg_value))
+        season_obp_values.append(safe_round(obp_value))
+        season_slg_values.append(safe_round(slg_value))
+        season_ops_values.append(safe_round(ops_value))
+        season_iso_values.append(safe_round(iso_value))
+
+    df["avg_game_season_to_date"] = season_avg_values
+    df["obp_game_season_to_date"] = season_obp_values
+    df["slg_game_season_to_date"] = season_slg_values
+    df["ops_game_season_to_date"] = season_ops_values
+    df["iso_game_season_to_date"] = season_iso_values
 
     return df
 
@@ -251,18 +407,31 @@ def validate_output(df: pd.DataFrame):
         "is_home",
         "runs_scored",
         "hits",
+        "at_bats",
         "walks",
         "strikeouts",
+        "avg_game",
+        "obp_game",
+        "slg_game",
         "ops_game",
         "runs_scored_last_3_avg",
         "hits_last_3_avg",
+        "at_bats_last_3_avg",
         "walks_last_3_avg",
-        "strikeouts_last_3_avg",
+        "avg_game_last_3_avg",
+        "obp_game_last_3_avg",
+        "slg_game_last_3_avg",
         "ops_game_last_3_avg",
+        "iso_game_last_3_avg",
         "games_played_last_3",
         "runs_scored_last_5_avg",
         "hits_last_5_avg",
+        "at_bats_last_5_avg",
+        "avg_game_last_5_avg",
+        "obp_game_last_5_avg",
+        "slg_game_last_5_avg",
         "ops_game_last_5_avg",
+        "iso_game_last_5_avg",
         "games_played_last_5",
     ]
 

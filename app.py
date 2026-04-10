@@ -131,121 +131,299 @@ CONTEXT_METRICS = [
     },
 ]
 
-OFFENSE_METRICS = [
-    {
-        "label": "Carreras anotadas prom. L3",
-        "away_candidates": ["away_runs_scored_last_3_avg"],
-        "home_candidates": ["home_runs_scored_last_3_avg"],
-        "value_type": "decimal",
+OFFENSE_METRICS_BY_WINDOW = {
+    "Temporada": {
+        "core": [
+            {
+                "label": "OPS temporada",
+                "away_candidates": ["away_offense_ops_game_season_to_date"],
+                "home_candidates": ["home_offense_ops_game_season_to_date"],
+                "value_type": "float",
+            },
+            {
+                "label": "ISO temporada",
+                "away_candidates": ["away_offense_iso_game_season_to_date"],
+                "home_candidates": ["home_offense_iso_game_season_to_date"],
+                "value_type": "float",
+            },
+        ],
+        "detail": [
+            {
+                "label": "Juegos temporada",
+                "away_candidates": ["away_offense_games_played_season_to_date"],
+                "home_candidates": ["home_offense_games_played_season_to_date"],
+                "value_type": "integer",
+            },
+            {
+                "label": "AVG temporada",
+                "away_candidates": ["away_offense_avg_game_season_to_date"],
+                "home_candidates": ["home_offense_avg_game_season_to_date"],
+                "value_type": "float",
+            },
+            {
+                "label": "OBP temporada",
+                "away_candidates": ["away_offense_obp_game_season_to_date"],
+                "home_candidates": ["home_offense_obp_game_season_to_date"],
+                "value_type": "float",
+            },
+            {
+                "label": "SLG temporada",
+                "away_candidates": ["away_offense_slg_game_season_to_date"],
+                "home_candidates": ["home_offense_slg_game_season_to_date"],
+                "value_type": "float",
+            },
+            {
+                "label": "Carreras acumuladas",
+                "away_candidates": ["away_offense_runs_scored_season_to_date"],
+                "home_candidates": ["home_offense_runs_scored_season_to_date"],
+                "value_type": "integer",
+            },
+            {
+                "label": "Hits acumulados",
+                "away_candidates": ["away_offense_hits_season_to_date"],
+                "home_candidates": ["home_offense_hits_season_to_date"],
+                "value_type": "integer",
+            },
+            {
+                "label": "Turnos acumulados",
+                "away_candidates": ["away_offense_at_bats_season_to_date"],
+                "home_candidates": ["home_offense_at_bats_season_to_date"],
+                "value_type": "integer",
+            },
+            {
+                "label": "BB acumuladas",
+                "away_candidates": ["away_offense_walks_season_to_date"],
+                "home_candidates": ["home_offense_walks_season_to_date"],
+                "value_type": "integer",
+            },
+            {
+                "label": "Bases totales acumuladas",
+                "away_candidates": ["away_offense_total_bases_season_to_date"],
+                "home_candidates": ["home_offense_total_bases_season_to_date"],
+                "value_type": "integer",
+            },
+        ],
     },
-    {
-        "label": "Carreras permitidas prom. L3",
-        "away_candidates": ["away_runs_allowed_last_3_avg"],
-        "home_candidates": ["home_runs_allowed_last_3_avg"],
-        "value_type": "decimal",
+    "Últimos 5": {
+        "core": [
+            {
+                "label": "OPS L5",
+                "away_candidates": ["away_offense_ops_game_last_5_avg", "away_ops_game_last_5_avg"],
+                "home_candidates": ["home_offense_ops_game_last_5_avg", "home_ops_game_last_5_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "ISO L5",
+                "away_candidates": ["away_offense_iso_game_last_5_avg", "away_iso_game_last_5_avg"],
+                "home_candidates": ["home_offense_iso_game_last_5_avg", "home_iso_game_last_5_avg"],
+                "value_type": "float",
+            },
+        ],
+        "detail": [
+            {
+                "label": "Carreras anotadas prom. L5",
+                "away_candidates": ["away_offense_runs_scored_last_5_avg", "away_runs_scored_last_5_avg"],
+                "home_candidates": ["home_offense_runs_scored_last_5_avg", "home_runs_scored_last_5_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "AVG L5",
+                "away_candidates": ["away_offense_avg_game_last_5_avg", "away_avg_game_last_5_avg"],
+                "home_candidates": ["home_offense_avg_game_last_5_avg", "home_avg_game_last_5_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "OBP L5",
+                "away_candidates": ["away_offense_obp_game_last_5_avg", "away_obp_game_last_5_avg"],
+                "home_candidates": ["home_offense_obp_game_last_5_avg", "home_obp_game_last_5_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "SLG L5",
+                "away_candidates": ["away_offense_slg_game_last_5_avg", "away_slg_game_last_5_avg"],
+                "home_candidates": ["home_offense_slg_game_last_5_avg", "home_slg_game_last_5_avg"],
+                "value_type": "float",
+            },
+        ],
     },
-    {
-        "label": "Run diff prom. L3",
-        "away_candidates": ["away_run_diff_last_3_avg"],
-        "home_candidates": ["home_run_diff_last_3_avg"],
-        "value_type": "decimal",
-        "highlight": "run_diff",
+    "Últimos 3": {
+        "core": [
+            {
+                "label": "OPS L3",
+                "away_candidates": ["away_offense_ops_game_last_3_avg", "away_ops_game_last_3_avg"],
+                "home_candidates": ["home_offense_ops_game_last_3_avg", "home_ops_game_last_3_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "ISO L3",
+                "away_candidates": ["away_offense_iso_game_last_3_avg", "away_iso_game_last_3_avg"],
+                "home_candidates": ["home_offense_iso_game_last_3_avg", "home_iso_game_last_3_avg"],
+                "value_type": "float",
+            },
+        ],
+        "detail": [
+            {
+                "label": "Carreras anotadas prom. L3",
+                "away_candidates": ["away_offense_runs_scored_last_3_avg", "away_runs_scored_last_3_avg"],
+                "home_candidates": ["home_offense_runs_scored_last_3_avg", "home_runs_scored_last_3_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "AVG L3",
+                "away_candidates": ["away_offense_avg_game_last_3_avg", "away_avg_game_last_3_avg"],
+                "home_candidates": ["home_offense_avg_game_last_3_avg", "home_avg_game_last_3_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "OBP L3",
+                "away_candidates": ["away_offense_obp_game_last_3_avg", "away_obp_game_last_3_avg"],
+                "home_candidates": ["home_offense_obp_game_last_3_avg", "home_obp_game_last_3_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "SLG L3",
+                "away_candidates": ["away_offense_slg_game_last_3_avg", "away_slg_game_last_3_avg"],
+                "home_candidates": ["home_offense_slg_game_last_3_avg", "home_slg_game_last_3_avg"],
+                "value_type": "float",
+            },
+        ],
     },
-    {
-        "label": "Carreras anotadas prom. L5",
-        "away_candidates": ["away_runs_scored_last_5_avg"],
-        "home_candidates": ["home_runs_scored_last_5_avg"],
-        "value_type": "decimal",
-    },
-    {
-        "label": "Carreras permitidas prom. L5",
-        "away_candidates": ["away_runs_allowed_last_5_avg"],
-        "home_candidates": ["home_runs_allowed_last_5_avg"],
-        "value_type": "decimal",
-    },
-    {
-        "label": "Run diff prom. L5",
-        "away_candidates": ["away_run_diff_last_5_avg"],
-        "home_candidates": ["home_run_diff_last_5_avg"],
-        "value_type": "decimal",
-        "highlight": "run_diff",
-    },
-    {
-        "label": "AVG ofensivo prom. L3",
-        "away_candidates": ["away_offense_avg_game_last_3_avg", "away_avg_game_last_3_avg"],
-        "home_candidates": ["home_offense_avg_game_last_3_avg", "home_avg_game_last_3_avg"],
-        "value_type": "decimal",
-    },
-    {
-        "label": "OBP ofensivo prom. L3",
-        "away_candidates": ["away_offense_obp_game_last_3_avg", "away_obp_game_last_3_avg"],
-        "home_candidates": ["home_offense_obp_game_last_3_avg", "home_obp_game_last_3_avg"],
-        "value_type": "decimal",
-    },
-    {
-        "label": "SLG ofensivo prom. L3",
-        "away_candidates": ["away_offense_slg_game_last_3_avg", "away_slg_game_last_3_avg"],
-        "home_candidates": ["home_offense_slg_game_last_3_avg", "home_slg_game_last_3_avg"],
-        "value_type": "decimal",
-    },
-]
+}
 
-STARTER_METRICS = [
-    {
-        "label": "Aperturas previas L3",
-        "away_candidates": ["away_starter_starts_count_last_3"],
-        "home_candidates": ["home_starter_starts_count_last_3"],
-        "value_type": "decimal",
+STARTER_METRICS_BY_WINDOW = {
+    "Últimos 5": {
+        "core": [
+            {
+                "label": "ERA L5",
+                "away_candidates": ["away_starter_era_last_5"],
+                "home_candidates": ["home_starter_era_last_5"],
+                "value_type": "float",
+            },
+            {
+                "label": "K prom. L5",
+                "away_candidates": ["away_starter_strikeouts_last_5_avg"],
+                "home_candidates": ["home_starter_strikeouts_last_5_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "BB prom. L5",
+                "away_candidates": ["away_starter_walks_last_5_avg"],
+                "home_candidates": ["home_starter_walks_last_5_avg"],
+                "value_type": "float",
+            },
+        ],
+        "detail": [
+            {
+                "label": "Aperturas previas L5",
+                "away_candidates": ["away_starter_starts_count_last_5"],
+                "home_candidates": ["home_starter_starts_count_last_5"],
+                "value_type": "integer",
+            },
+            {
+                "label": "Outs lanzados prom. L5",
+                "away_candidates": ["away_starter_outs_recorded_last_5_avg", "away_starter_innings_pitched_outs_last_5_avg"],
+                "home_candidates": ["home_starter_outs_recorded_last_5_avg", "home_starter_innings_pitched_outs_last_5_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "Hits permitidos prom. L5",
+                "away_candidates": ["away_starter_hits_allowed_last_5_avg"],
+                "home_candidates": ["home_starter_hits_allowed_last_5_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "Carreras limpias prom. L5",
+                "away_candidates": ["away_starter_earned_runs_last_5_avg"],
+                "home_candidates": ["home_starter_earned_runs_last_5_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "HR permitidos prom. L5",
+                "away_candidates": ["away_starter_home_runs_allowed_last_5_avg"],
+                "home_candidates": ["home_starter_home_runs_allowed_last_5_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "Pitcheos prom. L5",
+                "away_candidates": ["away_starter_pitches_thrown_last_5_avg"],
+                "home_candidates": ["home_starter_pitches_thrown_last_5_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "Batters faced prom. L5",
+                "away_candidates": ["away_starter_batters_faced_last_5_avg"],
+                "home_candidates": ["home_starter_batters_faced_last_5_avg"],
+                "value_type": "float",
+            },
+        ],
     },
-    {
-        "label": "Outs lanzados prom. L3",
-        "away_candidates": ["away_starter_innings_pitched_outs_last_3_avg"],
-        "home_candidates": ["home_starter_innings_pitched_outs_last_3_avg"],
-        "value_type": "decimal",
+    "Últimos 3": {
+        "core": [
+            {
+                "label": "ERA L3",
+                "away_candidates": ["away_starter_era_last_3"],
+                "home_candidates": ["home_starter_era_last_3"],
+                "value_type": "float",
+            },
+            {
+                "label": "K prom. L3",
+                "away_candidates": ["away_starter_strikeouts_last_3_avg"],
+                "home_candidates": ["home_starter_strikeouts_last_3_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "BB prom. L3",
+                "away_candidates": ["away_starter_walks_last_3_avg"],
+                "home_candidates": ["home_starter_walks_last_3_avg"],
+                "value_type": "float",
+            },
+        ],
+        "detail": [
+            {
+                "label": "Aperturas previas L3",
+                "away_candidates": ["away_starter_starts_count_last_3"],
+                "home_candidates": ["home_starter_starts_count_last_3"],
+                "value_type": "integer",
+            },
+            {
+                "label": "Outs lanzados prom. L3",
+                "away_candidates": ["away_starter_outs_recorded_last_3_avg", "away_starter_innings_pitched_outs_last_3_avg"],
+                "home_candidates": ["home_starter_outs_recorded_last_3_avg", "home_starter_innings_pitched_outs_last_3_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "Hits permitidos prom. L3",
+                "away_candidates": ["away_starter_hits_allowed_last_3_avg"],
+                "home_candidates": ["home_starter_hits_allowed_last_3_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "Carreras limpias prom. L3",
+                "away_candidates": ["away_starter_earned_runs_last_3_avg"],
+                "home_candidates": ["home_starter_earned_runs_last_3_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "HR permitidos prom. L3",
+                "away_candidates": ["away_starter_home_runs_allowed_last_3_avg"],
+                "home_candidates": ["home_starter_home_runs_allowed_last_3_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "Pitcheos prom. L3",
+                "away_candidates": ["away_starter_pitches_thrown_last_3_avg"],
+                "home_candidates": ["home_starter_pitches_thrown_last_3_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "Batters faced prom. L3",
+                "away_candidates": ["away_starter_batters_faced_last_3_avg"],
+                "home_candidates": ["home_starter_batters_faced_last_3_avg"],
+                "value_type": "float",
+            },
+        ],
     },
-    {
-        "label": "Hits permitidos prom. L3",
-        "away_candidates": ["away_starter_hits_allowed_last_3_avg"],
-        "home_candidates": ["home_starter_hits_allowed_last_3_avg"],
-        "value_type": "decimal",
-    },
-    {
-        "label": "Carreras limpias prom. L3",
-        "away_candidates": ["away_starter_earned_runs_last_3_avg"],
-        "home_candidates": ["home_starter_earned_runs_last_3_avg"],
-        "value_type": "decimal",
-    },
-    {
-        "label": "Bases por bolas prom. L3",
-        "away_candidates": ["away_starter_walks_last_3_avg"],
-        "home_candidates": ["home_starter_walks_last_3_avg"],
-        "value_type": "decimal",
-    },
-    {
-        "label": "Ponches prom. L3",
-        "away_candidates": ["away_starter_strikeouts_last_3_avg"],
-        "home_candidates": ["home_starter_strikeouts_last_3_avg"],
-        "value_type": "decimal",
-    },
-    {
-        "label": "HR permitidos prom. L3",
-        "away_candidates": ["away_starter_home_runs_allowed_last_3_avg"],
-        "home_candidates": ["home_starter_home_runs_allowed_last_3_avg"],
-        "value_type": "decimal",
-    },
-    {
-        "label": "Pitcheos prom. L3",
-        "away_candidates": ["away_starter_pitches_thrown_last_3_avg"],
-        "home_candidates": ["home_starter_pitches_thrown_last_3_avg"],
-        "value_type": "decimal",
-    },
-    {
-        "label": "Batters faced prom. L3",
-        "away_candidates": ["away_starter_batters_faced_last_3_avg"],
-        "home_candidates": ["home_starter_batters_faced_last_3_avg"],
-        "value_type": "decimal",
-    },
-]
+}
 
 
 def find_pregame_features_file() -> Path:
@@ -337,9 +515,9 @@ def format_value(value, value_type: str = "text") -> str:
         except (TypeError, ValueError):
             return str(value)
 
-    if value_type == "decimal":
+    if value_type == "float":
         try:
-            return f"{float(value):.2f}"
+            return f"{float(value):.3f}"
         except (TypeError, ValueError):
             return str(value)
 
@@ -355,7 +533,7 @@ def format_value(value, value_type: str = "text") -> str:
     if isinstance(value, float):
         if value.is_integer():
             return str(int(value))
-        return f"{value:.2f}"
+        return f"{value:.3f}"
 
     return str(value)
 
@@ -452,6 +630,52 @@ def inject_theme_styles() -> None:
             font-size: 0.95rem;
             line-height: 1.5;
             margin: 0;
+        }}        .compare-card {{
+            background: white;
+            border: 1px solid {MLB_BORDER};
+            border-radius: 16px;
+            padding: 0.9rem 1rem;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 8px 20px rgba(12, 35, 64, 0.05);
+        }}
+        .compare-card-title {{
+            color: {MLB_BLUE};
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.55rem;
+        }}
+        .compare-grid {{
+            display: grid;
+            grid-template-columns: 1fr 120px 1fr;
+            gap: 0.75rem;
+            align-items: center;
+        }}
+        .compare-side {{
+            background: {MLB_BG};
+            border-radius: 12px;
+            padding: 0.65rem 0.8rem;
+            border: 1px solid {MLB_BORDER};
+        }}
+        .compare-team-label {{
+            color: #486581;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 0.2rem;
+        }}
+        .compare-value {{
+            color: {MLB_BLUE};
+            font-size: 1.2rem;
+            font-weight: 700;
+            line-height: 1.1;
+        }}
+        .compare-metric-name {{
+            text-align: center;
+            color: #486581;
+            font-size: 0.85rem;
+            font-weight: 600;
         }}
         </style>
         """,
@@ -628,6 +852,35 @@ def style_comparison_table(df: pd.DataFrame):
 
     return style_standard_table(visible_df).apply(highlight_rows, axis=1)
 
+def render_metric_cards(section_df: pd.DataFrame, away_label: str, home_label: str) -> None:
+    """
+    Renderiza una lista compacta de tarjetas comparativas away vs home.
+    """
+    for _, row in section_df.iterrows():
+        away_value = row.get(away_label, "N/D")
+        home_value = row.get(home_label, "N/D")
+        metric_name = row.get("Metric", "")
+
+        st.markdown(
+            f"""
+            <div class="compare-card">
+                <div class="compare-card-title">{metric_name}</div>
+                <div class="compare-grid">
+                    <div class="compare-side">
+                        <div class="compare-team-label">{away_label}</div>
+                        <div class="compare-value">{away_value}</div>
+                    </div>
+                    <div class="compare-metric-name">vs</div>
+                    <div class="compare-side">
+                        <div class="compare-team-label">{home_label}</div>
+                        <div class="compare-value">{home_value}</div>
+                    </div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
 
 inject_theme_styles()
 
@@ -772,9 +1025,59 @@ else:
 
 st.subheader("6. Matchup pregame")
 
+st.markdown("### Ventanas de comparacion")
+
+col_window_1, col_window_2 = st.columns(2)
+
+with col_window_1:
+    selected_offense_window = st.radio(
+        "Ofensiva",
+        options=["Temporada", "Últimos 5", "Últimos 3"],
+        horizontal=True,
+        index=1,
+    )
+
+with col_window_2:
+    selected_starter_window = st.radio(
+        "Abridor",
+        options=["Últimos 5", "Últimos 3"],
+        horizontal=True,
+        index=0,
+    )
+
 context_df = build_metric_section(df, matchup_row, CONTEXT_METRICS, away_display_name, home_display_name)
-offense_df = build_metric_section(df, matchup_row, OFFENSE_METRICS, away_display_name, home_display_name)
-starter_df = build_metric_section(df, matchup_row, STARTER_METRICS, away_display_name, home_display_name)
+
+offense_core_df = build_metric_section(
+    df,
+    matchup_row,
+    OFFENSE_METRICS_BY_WINDOW[selected_offense_window]["core"],
+    away_display_name,
+    home_display_name,
+)
+
+offense_detail_df = build_metric_section(
+    df,
+    matchup_row,
+    OFFENSE_METRICS_BY_WINDOW[selected_offense_window]["detail"],
+    away_display_name,
+    home_display_name,
+)
+
+starter_core_df = build_metric_section(
+    df,
+    matchup_row,
+    STARTER_METRICS_BY_WINDOW[selected_starter_window]["core"],
+    away_display_name,
+    home_display_name,
+)
+
+starter_detail_df = build_metric_section(
+    df,
+    matchup_row,
+    STARTER_METRICS_BY_WINDOW[selected_starter_window]["detail"],
+    away_display_name,
+    home_display_name,
+)
 
 render_section_header(
     "6.1",
@@ -785,27 +1088,29 @@ st.dataframe(style_comparison_table(context_df), use_container_width=True, hide_
 
 render_section_header(
     "6.2",
-    "Ofensiva reciente",
-    "Produccion reciente del equipo y ahora tambien AVG, OBP y SLG en la ventana de 3 juegos.",
+    f"Ofensiva | {selected_offense_window}",
+    "Comparacion principal de produccion y poder ofensivo segun la ventana seleccionada.",
 )
-st.dataframe(style_comparison_table(offense_df), use_container_width=True, hide_index=True)
+render_metric_cards(offense_core_df, away_display_name, home_display_name)
+
+with st.expander(f"Ver detalle ofensivo | {selected_offense_window}"):
+    st.dataframe(
+        style_comparison_table(offense_detail_df),
+        use_container_width=True,
+        hide_index=True,
+    )
 
 render_section_header(
     "6.3",
-    "Pitcher abridor reciente",
-    "Resumen del desempeno reciente del abridor probable en sus ultimas aperturas disponibles.",
+    f"Abridor | {selected_starter_window}",
+    "Comparacion principal del abridor probable segun la ventana seleccionada.",
     accent="red",
 )
-st.dataframe(style_comparison_table(starter_df), use_container_width=True, hide_index=True)
+render_metric_cards(starter_core_df, away_display_name, home_display_name)
 
-st.subheader("7. Vista rapida de columnas del partido seleccionado")
-st.caption("Vista tecnica de apoyo para inspeccion del registro seleccionado.")
-
-matchup_preview = pd.DataFrame(
-    {
-        "column_name": matchup_row.index,
-        "value": [format_value(value) for value in matchup_row.values],
-    }
-)
-
-st.dataframe(style_standard_table(matchup_preview), use_container_width=True, hide_index=True)
+with st.expander(f"Ver detalle del abridor | {selected_starter_window}"):
+    st.dataframe(
+        style_comparison_table(starter_detail_df),
+        use_container_width=True,
+        hide_index=True,
+    )
