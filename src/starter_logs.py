@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import time
+from pathlib import Path
 from typing import Any, Dict, List, Optional
+
 from src.config import GAMES_SCHEDULE_FILE, STARTER_GAME_LOGS_FILE
+from src.pipeline_paths import get_pipeline_paths
 
 import pandas as pd
 import requests
-
 
 BASE_URL = "https://statsapi.mlb.com/api/v1"
 
@@ -425,11 +427,28 @@ def build_starter_game_logs(
 
     return starter_game_logs
 
+def save_starter_game_logs(
+    df: pd.DataFrame,
+    output_file=STARTER_GAME_LOGS_FILE,
+) -> Path:
+    output_path = Path(output_file)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(output_path, index=False)
+    return output_path
 
-if __name__ == "__main__":
-    input_path = GAMES_SCHEDULE_FILE
 
-    print(f"Leyendo games_schedule desde: {input_path}")
+def build_starter_logs_file(
+    games_schedule_file=GAMES_SCHEDULE_FILE,
+    output_file=STARTER_GAME_LOGS_FILE,
+    sleep_seconds: float = 0.05,
+    limit_games: Optional[int] = None,
+    save_output: bool = True,
+    verbose: bool = True,
+) -> pd.DataFrame:
+    input_path = Path(games_schedule_file)
+
+    if verbose:
+        print(f"Leyendo games_schedule desde: {input_path}")
 
     if not input_path.exists():
         raise FileNotFoundError(f"No existe el archivo: {input_path}")
@@ -438,14 +457,47 @@ if __name__ == "__main__":
 
     starter_game_logs = build_starter_game_logs(
         games_schedule=games_schedule,
-        sleep_seconds=0.05,
-        limit_games=None,
+        sleep_seconds=sleep_seconds,
+        limit_games=limit_games,
     )
 
     starter_game_logs = add_starter_rolling_features(starter_game_logs)
 
-    output_path = STARTER_GAME_LOGS_FILE
-    starter_game_logs.to_csv(output_path, index=False)
+    if save_output:
+        output_path = save_starter_game_logs(
+            starter_game_logs,
+            output_file=output_file,
+        )
+        if verbose:
+            print("\nstarter_game_logs shape:", starter_game_logs.shape)
+            print(f"\nArchivo guardado en: {output_path}")
 
-    print("\nstarter_game_logs shape:", starter_game_logs.shape)
-    print(f"\nArchivo guardado en: {output_path}")
+    return starter_game_logs
+
+
+def build_starter_logs_file_for_date_range(
+    start_date: str,
+    end_date: str,
+    sleep_seconds: float = 0.05,
+    limit_games: Optional[int] = None,
+    save_output: bool = True,
+    verbose: bool = True,
+) -> pd.DataFrame:
+    paths = get_pipeline_paths(start_date=start_date, end_date=end_date)
+
+    return build_starter_logs_file(
+        games_schedule_file=paths["games_schedule_file"],
+        output_file=paths["starter_game_logs_file"],
+        sleep_seconds=sleep_seconds,
+        limit_games=limit_games,
+        save_output=save_output,
+        verbose=verbose,
+    )
+
+
+def main():
+    build_starter_logs_file()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,25 +1,13 @@
-from pathlib import Path
-
 import pandas as pd
 import streamlit as st
+
+from src.master_data import load_pregame_features_master
+from src.pipeline_paths import PREGAME_FEATURES_MASTER_FILE
 
 
 st.set_page_config(
     page_title="Baseball Predict",
     layout="wide",
-)
-
-
-DATASET_PATTERNS = (
-    "pregame_features_game*.parquet",
-    "pregame_features_game*.csv",
-)
-
-SEARCH_DIRS = (
-    Path("data/processed"),
-    Path("data/interim"),
-    Path("data"),
-    Path("."),
 )
 
 DATE_COLUMN_CANDIDATES = [
@@ -426,44 +414,13 @@ STARTER_METRICS_BY_WINDOW = {
 }
 
 
-def find_pregame_features_file() -> Path:
-    """
-    Busca el archivo final pregame_features_game y usa el mas reciente.
-    """
-    candidates: dict[Path, Path] = {}
-
-    for base_dir in SEARCH_DIRS:
-        if not base_dir.exists():
-            continue
-
-        for pattern in DATASET_PATTERNS:
-            for path in base_dir.glob(pattern):
-                candidates[path.resolve()] = path
-
-    if not candidates:
-        raise FileNotFoundError(
-            "No se encontro ningun archivo pregame_features_game en las carpetas esperadas."
-        )
-
-    return max(candidates.values(), key=lambda path: path.stat().st_mtime)
-
-
 @st.cache_data
 def load_pregame_features() -> tuple[pd.DataFrame, str]:
     """
-    Carga el dataset final del proyecto y devuelve tambien la ruta usada.
+    Carga el master oficial del pipeline y devuelve tambien la ruta usada.
     """
-    file_path = find_pregame_features_file()
-
-    if file_path.suffix == ".parquet":
-        df = pd.read_parquet(file_path)
-    elif file_path.suffix == ".csv":
-        df = pd.read_csv(file_path)
-    else:
-        raise ValueError(f"Formato de archivo no soportado: {file_path.suffix}")
-
-    return df, str(file_path)
-
+    df = load_pregame_features_master()
+    return df, str(PREGAME_FEATURES_MASTER_FILE)
 
 def find_column(df: pd.DataFrame, candidates: list[str], label: str | None = None) -> str | None:
     """
@@ -900,7 +857,7 @@ st.markdown(
 try:
     df, file_path = load_pregame_features()
 except Exception as exc:
-    st.error("No pude cargar el dataset final pregame_features_game.")
+    st.error("No pude cargar el master oficial del pipeline pregame.")
     st.exception(exc)
     st.stop()
 

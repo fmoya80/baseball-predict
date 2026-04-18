@@ -1,5 +1,7 @@
 import pandas as pd
 
+from src.pipeline_paths import get_pipeline_paths
+
 from src.config import (
     PREGAME_TEAM_SNAPSHOT_FILE,
     STARTER_GAME_LOGS_FILE,
@@ -8,22 +10,39 @@ from src.config import (
 )
 
 
-def load_inputs():
+def load_inputs(
+    pregame_snapshot_file=PREGAME_TEAM_SNAPSHOT_FILE,
+    starter_logs_file=STARTER_GAME_LOGS_FILE,
+    batting_logs_file=TEAM_BATTING_LOGS_FILE,
+):
     """
     Carga las tablas base:
     - pregame_team_snapshot: 1 fila por partido
     - starter_game_logs: historial de abridores con rolling
     - team_batting_logs: historial ofensivo por equipo con rolling
     """
-    pregame_df = pd.read_csv(PREGAME_TEAM_SNAPSHOT_FILE)
-    starter_df = pd.read_csv(STARTER_GAME_LOGS_FILE)
-    batting_df = pd.read_csv(TEAM_BATTING_LOGS_FILE)
+    pregame_df = pd.read_csv(pregame_snapshot_file)
+    starter_df = pd.read_csv(starter_logs_file)
+    batting_df = pd.read_csv(batting_logs_file)
 
     pregame_df["game_date"] = pd.to_datetime(pregame_df["game_date"])
     starter_df["game_date"] = pd.to_datetime(starter_df["game_date"])
     batting_df["game_date"] = pd.to_datetime(batting_df["game_date"])
 
     return pregame_df, starter_df, batting_df
+
+
+def load_inputs_for_date_range(start_date: str, end_date: str):
+    """
+    Carga las tablas base para un rango dinámico usando pipeline_paths.
+    """
+    paths = get_pipeline_paths(start_date=start_date, end_date=end_date)
+
+    return load_inputs(
+        pregame_snapshot_file=paths["pregame_team_snapshot_file"],
+        starter_logs_file=paths["starter_game_logs_file"],
+        batting_logs_file=paths["team_batting_logs_file"],
+    )
 
 
 def prepare_starter_history(starter_df: pd.DataFrame) -> pd.DataFrame:
@@ -426,8 +445,19 @@ def validate_output(df: pd.DataFrame):
         print(df["home_offense_has_last_3_data_flag"].value_counts(dropna=False))
 
 
-def main():
-    pregame_df, starter_df, batting_df = load_inputs()
+def build_pregame_features_game(
+    pregame_snapshot_file=PREGAME_TEAM_SNAPSHOT_FILE,
+    starter_logs_file=STARTER_GAME_LOGS_FILE,
+    batting_logs_file=TEAM_BATTING_LOGS_FILE,
+    output_file=PREGAME_FEATURES_GAME_FILE,
+    save_output: bool = True,
+    verbose: bool = True,
+) -> pd.DataFrame:
+    pregame_df, starter_df, batting_df = load_inputs(
+        pregame_snapshot_file=pregame_snapshot_file,
+        starter_logs_file=starter_logs_file,
+        batting_logs_file=batting_logs_file,
+    )
 
     starter_history_df = prepare_starter_history(starter_df)
     batting_history_df = prepare_batting_history(batting_df)
@@ -485,7 +515,7 @@ def main():
     )
 
     pregame_features_game["away_offense_has_last_3_data_flag"] = (
-    pregame_features_game["away_offense_games_played_last_3"].fillna(0) > 0
+        pregame_features_game["away_offense_games_played_last_3"].fillna(0) > 0
     ).astype(int)
 
     pregame_features_game["away_offense_has_last_5_data_flag"] = (
@@ -502,40 +532,72 @@ def main():
 
     pregame_features_game = add_derived_metrics(pregame_features_game)
 
-    validate_output(pregame_features_game)
+    if verbose:
+        validate_output(pregame_features_game)
 
-    pregame_features_game.to_csv(PREGAME_FEATURES_GAME_FILE, index=False)
-    print(f"\nArchivo guardado en: {PREGAME_FEATURES_GAME_FILE}")
+    if save_output:
+        pregame_features_game.to_csv(output_file, index=False)
+        if verbose:
+            print(f"\nArchivo guardado en: {output_file}")
 
-    print("\nEjemplo columnas nuevas de offense:")
-    offense_cols = [c for c in pregame_features_game.columns if "_offense_" in c]
-    print(sorted(offense_cols)[:25])
+    if verbose:
+        print("\nEjemplo columnas nuevas de offense:")
+        offense_cols = [c for c in pregame_features_game.columns if "_offense_" in c]
+        print(sorted(offense_cols)[:25])
 
-    print("\nVista previa final:")
-    preview_cols = [
-        "gamePk",
-        "game_date",
-        "away_team_name",
-        "home_team_name",
-        "away_offense_games_played_season_to_date",
-        "home_offense_games_played_season_to_date",
-        "away_offense_ops_game_season_to_date",
-        "home_offense_ops_game_season_to_date",
-        "away_offense_iso_game_season_to_date",
-        "home_offense_iso_game_season_to_date",
-        "away_offense_ops_game_last_5_avg",
-        "home_offense_ops_game_last_5_avg",
-        "away_offense_iso_game_last_5_avg",
-        "home_offense_iso_game_last_5_avg",
-        "away_offense_ops_game_last_3_avg",
-        "home_offense_ops_game_last_3_avg",
-        "away_offense_iso_game_last_3_avg",
-        "home_offense_iso_game_last_3_avg",
-        "away_offense_has_last_3_data_flag",
-        "home_offense_has_last_3_data_flag",
-    ]
-    preview_cols = [c for c in preview_cols if c in pregame_features_game.columns]
-    print(pregame_features_game[preview_cols].head(10).to_string(index=False))
+        print("\nVista previa final:")
+        preview_cols = [
+            "gamePk",
+            "game_date",
+            "away_team_name",
+            "home_team_name",
+            "away_offense_games_played_season_to_date",
+            "home_offense_games_played_season_to_date",
+            "away_offense_ops_game_season_to_date",
+            "home_offense_ops_game_season_to_date",
+            "away_offense_iso_game_season_to_date",
+            "home_offense_iso_game_season_to_date",
+            "away_offense_ops_game_last_5_avg",
+            "home_offense_ops_game_last_5_avg",
+            "away_offense_iso_game_last_5_avg",
+            "home_offense_iso_game_last_5_avg",
+            "away_offense_ops_game_last_3_avg",
+            "home_offense_ops_game_last_3_avg",
+            "away_offense_iso_game_last_3_avg",
+            "home_offense_iso_game_last_3_avg",
+            "away_offense_has_last_3_data_flag",
+            "home_offense_has_last_3_data_flag",
+        ]
+        preview_cols = [c for c in preview_cols if c in pregame_features_game.columns]
+        print(pregame_features_game[preview_cols].head(10).to_string(index=False))
+
+    return pregame_features_game
+
+
+def build_pregame_features_game_for_date_range(
+    start_date: str,
+    end_date: str,
+    save_output: bool = True,
+    verbose: bool = True,
+) -> pd.DataFrame:
+    """
+    Construye pregame_features_game para un rango dinámico usando
+    las rutas armadas por pipeline_paths.py
+    """
+    paths = get_pipeline_paths(start_date=start_date, end_date=end_date)
+
+    return build_pregame_features_game(
+        pregame_snapshot_file=paths["pregame_team_snapshot_file"],
+        starter_logs_file=paths["starter_game_logs_file"],
+        batting_logs_file=paths["team_batting_logs_file"],
+        output_file=paths["pregame_features_game_file"],
+        save_output=save_output,
+        verbose=verbose,
+    )
+
+
+def main():
+    build_pregame_features_game()
 
 
 if __name__ == "__main__":

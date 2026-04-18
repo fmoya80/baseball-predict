@@ -1,6 +1,8 @@
 from pathlib import Path
 import pandas as pd
 
+from src.pipeline_paths import get_pipeline_paths
+
 from src.config import (
     GAMES_SCHEDULE_FILE,
     TEAM_GAME_LOGS_FILE,
@@ -10,9 +12,12 @@ from src.config import (
 DEFAULT_OUTPUT_DIR = PREGAME_TEAM_SNAPSHOT_FILE.parent
 
 
-def load_inputs() -> tuple[pd.DataFrame, pd.DataFrame]:
-    games_df = pd.read_csv(GAMES_SCHEDULE_FILE)
-    team_logs_df = pd.read_csv(TEAM_GAME_LOGS_FILE)
+def load_inputs(
+    games_schedule_file=GAMES_SCHEDULE_FILE,
+    team_game_logs_file=TEAM_GAME_LOGS_FILE,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    games_df = pd.read_csv(games_schedule_file)
+    team_logs_df = pd.read_csv(team_game_logs_file)
     return games_df, team_logs_df
 
 
@@ -105,15 +110,49 @@ def save_pregame_snapshot(df: pd.DataFrame, file_name: str | Path = PREGAME_TEAM
     return output_path
 
 
-def main():
-    games_df, team_logs_df = load_inputs()
+def build_pregame_snapshot_file(
+    games_schedule_file=GAMES_SCHEDULE_FILE,
+    team_game_logs_file=TEAM_GAME_LOGS_FILE,
+    output_file=PREGAME_TEAM_SNAPSHOT_FILE,
+    save_output: bool = True,
+    verbose: bool = True,
+) -> pd.DataFrame:
+    games_df, team_logs_df = load_inputs(
+        games_schedule_file=games_schedule_file,
+        team_game_logs_file=team_game_logs_file,
+    )
     snapshot_df = build_pregame_team_snapshot(games_df, team_logs_df)
-    output_path = save_pregame_snapshot(snapshot_df, PREGAME_TEAM_SNAPSHOT_FILE)
 
-    print("games_df shape:", games_df.shape)
-    print("team_logs_df shape:", team_logs_df.shape)
-    print("pregame_team_snapshot shape:", snapshot_df.shape)
-    print(f"\nArchivo guardado en: {output_path}")
+    if save_output:
+        output_path = save_pregame_snapshot(snapshot_df, output_file)
+        if verbose:
+            print(f"\nArchivo guardado en: {output_path}")
+
+    if verbose:
+        print("games_df shape:", games_df.shape)
+        print("team_logs_df shape:", team_logs_df.shape)
+        print("pregame_team_snapshot shape:", snapshot_df.shape)
+
+    return snapshot_df
+
+def build_pregame_snapshot_file_for_date_range(
+    start_date: str,
+    end_date: str,
+    save_output: bool = True,
+    verbose: bool = True,
+) -> pd.DataFrame:
+    paths = get_pipeline_paths(start_date=start_date, end_date=end_date)
+
+    return build_pregame_snapshot_file(
+        games_schedule_file=paths["games_schedule_file"],
+        team_game_logs_file=paths["team_game_logs_file"],
+        output_file=paths["pregame_team_snapshot_file"],
+        save_output=save_output,
+        verbose=verbose,
+    )
+
+def main():
+    build_pregame_snapshot_file()
 
 
 if __name__ == "__main__":

@@ -1,16 +1,21 @@
+from pathlib import Path
+
 import pandas as pd
 import requests
 
 from src.config import GAMES_SCHEDULE_FILE, TEAM_BATTING_LOGS_FILE
+from src.pipeline_paths import get_pipeline_paths
 
 BOX_SCORE_URL = "https://statsapi.mlb.com/api/v1/game/{gamePk}/boxscore"
 
 
-def load_games_schedule() -> pd.DataFrame:
+def load_games_schedule(
+    games_schedule_file=GAMES_SCHEDULE_FILE,
+) -> pd.DataFrame:
     """
     Carga la tabla de partidos ya construida.
     """
-    games_df = pd.read_csv(GAMES_SCHEDULE_FILE)
+    games_df = pd.read_csv(games_schedule_file)
     games_df["game_date"] = pd.to_datetime(games_df["game_date"])
     return games_df
 
@@ -405,34 +410,27 @@ def validate_output(df: pd.DataFrame):
         "team_name",
         "opponent_team_name",
         "is_home",
-        "runs_scored",
-        "hits",
-        "at_bats",
-        "walks",
-        "strikeouts",
-        "avg_game",
-        "obp_game",
-        "slg_game",
-        "ops_game",
-        "runs_scored_last_3_avg",
-        "hits_last_3_avg",
-        "at_bats_last_3_avg",
-        "walks_last_3_avg",
+        "games_played_season_to_date",
+        "runs_scored_season_to_date",
+        "hits_season_to_date",
+        "at_bats_season_to_date",
+        "walks_season_to_date",
+        "total_bases_season_to_date",
+        "avg_game_season_to_date",
+        "obp_game_season_to_date",
+        "slg_game_season_to_date",
+        "ops_game_season_to_date",
+        "iso_game_season_to_date",
         "avg_game_last_3_avg",
         "obp_game_last_3_avg",
         "slg_game_last_3_avg",
         "ops_game_last_3_avg",
         "iso_game_last_3_avg",
-        "games_played_last_3",
-        "runs_scored_last_5_avg",
-        "hits_last_5_avg",
-        "at_bats_last_5_avg",
         "avg_game_last_5_avg",
         "obp_game_last_5_avg",
         "slg_game_last_5_avg",
         "ops_game_last_5_avg",
         "iso_game_last_5_avg",
-        "games_played_last_5",
     ]
 
     preview_cols = [c for c in preview_cols if c in df.columns]
@@ -440,19 +438,62 @@ def validate_output(df: pd.DataFrame):
     print("\nVista previa:")
     print(df[preview_cols].head(12).to_string(index=False))
 
+def save_team_batting_logs(
+    df: pd.DataFrame,
+    output_file=TEAM_BATTING_LOGS_FILE,
+) -> Path:
+    output_path = Path(output_file)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(output_path, index=False)
+    return output_path
 
-def main():
-    games_df = load_games_schedule()
 
-    print("games_df shape:", games_df.shape)
+def build_team_batting_logs_file(
+    games_schedule_file=GAMES_SCHEDULE_FILE,
+    output_file=TEAM_BATTING_LOGS_FILE,
+    save_output: bool = True,
+    verbose: bool = True,
+) -> pd.DataFrame:
+    games_df = load_games_schedule(games_schedule_file=games_schedule_file)
+
+    if verbose:
+        print("games_df shape:", games_df.shape)
 
     team_batting_logs = build_team_batting_logs(games_df)
     team_batting_logs = add_batting_rolling_features(team_batting_logs)
 
-    validate_output(team_batting_logs)
+    if verbose:
+        validate_output(team_batting_logs)
 
-    team_batting_logs.to_csv(TEAM_BATTING_LOGS_FILE, index=False)
-    print(f"\nArchivo guardado en: {TEAM_BATTING_LOGS_FILE}")
+    if save_output:
+        output_path = save_team_batting_logs(
+            team_batting_logs,
+            output_file=output_file,
+        )
+        if verbose:
+            print(f"\nArchivo guardado en: {output_path}")
+
+    return team_batting_logs
+
+
+def build_team_batting_logs_file_for_date_range(
+    start_date: str,
+    end_date: str,
+    save_output: bool = True,
+    verbose: bool = True,
+) -> pd.DataFrame:
+    paths = get_pipeline_paths(start_date=start_date, end_date=end_date)
+
+    return build_team_batting_logs_file(
+        games_schedule_file=paths["games_schedule_file"],
+        output_file=paths["team_batting_logs_file"],
+        save_output=save_output,
+        verbose=verbose,
+    )
+
+
+def main():
+    build_team_batting_logs_file()
 
 
 if __name__ == "__main__":
