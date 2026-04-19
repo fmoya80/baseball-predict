@@ -1,4 +1,6 @@
 pandas
-requests
-python-dotenv
 streamlit
+pyarrow
+requests
+fastapi
+uvicorn[standard]
