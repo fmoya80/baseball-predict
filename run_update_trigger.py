@@ -22,7 +22,7 @@ def main() -> int:
     response = requests.post(
         url,
         headers={"x-update-token": token},
-        timeout=60 * 60,
+        timeout=(30, 3600),
     )
 
     print(f"Status code: {response.status_code}")
