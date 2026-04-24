@@ -480,6 +480,26 @@ def build_pregame_features_game(
         home_starter_snapshot=home_starter_snapshot
     )
 
+    expected_starter_columns = [
+        "away_starter_starts_count_last_3",
+        "away_starter_starts_count_last_5",
+        "home_starter_starts_count_last_3",
+        "home_starter_starts_count_last_5",
+        "away_starter_earned_runs_last_3_avg",
+        "away_starter_earned_runs_last_5_avg",
+        "home_starter_earned_runs_last_3_avg",
+        "home_starter_earned_runs_last_5_avg",
+        "away_starter_outs_recorded_last_3_avg",
+        "away_starter_outs_recorded_last_5_avg",
+        "home_starter_outs_recorded_last_3_avg",
+        "home_starter_outs_recorded_last_5_avg",
+    ]
+
+    for col in expected_starter_columns:
+        if col not in pregame_features_game.columns:
+            pregame_features_game[col] = pd.NA
+    
+
     pregame_features_game["away_starter_has_last_3_data_flag"] = (
         pregame_features_game["away_starter_starts_count_last_3"].fillna(0) > 0
     ).astype(int)
