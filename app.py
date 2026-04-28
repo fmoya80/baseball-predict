@@ -414,7 +414,6 @@ STARTER_METRICS_BY_WINDOW = {
 }
 
 
-@st.cache_data
 def load_pregame_features() -> tuple[pd.DataFrame, str]:
     """
     Carga el master oficial del pipeline y devuelve tambien la ruta usada.
