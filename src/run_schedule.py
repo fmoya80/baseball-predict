@@ -23,18 +23,32 @@ def save_csv(df: pd.DataFrame, output_file) -> Path:
 def build_schedule_pipeline_for_date_range(
     start_date: str,
     end_date: str,
+    context_start_date: str | None = None,
     save_output: bool = True,
     verbose: bool = True,
 ):
     paths = get_pipeline_paths(start_date=start_date, end_date=end_date)
+    schedule_start_date = context_start_date or start_date
 
-    df_games = build_schedule_for_range(start_date, end_date)
+    df_games = build_schedule_for_range(schedule_start_date, end_date)
 
     df_team_logs = build_team_game_logs(df_games)
     validate_team_game_logs(df_team_logs, df_games)
     df_team_logs = add_team_rolling_features(df_team_logs, windows=[3, 5, 10])
 
-    df_snapshot = build_pregame_team_snapshot(df_games, df_team_logs)
+    df_snapshot_full = build_pregame_team_snapshot(df_games, df_team_logs)
+
+    start_ts = pd.to_datetime(start_date)
+    end_ts = pd.to_datetime(end_date)
+
+    df_team_logs["game_date"] = pd.to_datetime(df_team_logs["game_date"], errors="coerce")
+    df_snapshot_full["game_date"] = pd.to_datetime(df_snapshot_full["game_date"], errors="coerce")
+
+    in_window_team_logs = (df_team_logs["game_date"] >= start_ts) & (df_team_logs["game_date"] <= end_ts)
+    in_window_snapshot = (df_snapshot_full["game_date"] >= start_ts) & (df_snapshot_full["game_date"] <= end_ts)
+
+    df_team_logs = df_team_logs.loc[in_window_team_logs].copy()
+    df_snapshot = df_snapshot_full.loc[in_window_snapshot].copy()
 
     if save_output:
         # games_schedule ya lo guarda schedule.py automáticamente
