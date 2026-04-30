@@ -58,6 +58,7 @@ FLAG_FIELDS = [
     ("Offense", "away_offense_context_found_flag", "home_offense_context_found_flag"),
     ("Offense", "away_offense_has_last_3_data_flag", "home_offense_has_last_3_data_flag"),
     ("Offense", "away_offense_has_last_5_data_flag", "home_offense_has_last_5_data_flag"),
+    ("Offense", "away_offense_games_played_last_10", "home_offense_games_played_last_10"),
 ]
 
 MATCHUP_BASE_FIELDS = {
@@ -234,6 +235,78 @@ OFFENSE_METRICS_BY_WINDOW = {
             },
         ],
     },
+    "Últimos 10": {
+        "core": [
+            {
+                "label": "OPS L10",
+                "away_candidates": ["away_offense_OPS_last_10", "away_offense_ops_game_last_10_avg"],
+                "home_candidates": ["home_offense_OPS_last_10", "home_offense_ops_game_last_10_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "ISO L10",
+                "away_candidates": ["away_offense_ISO_last_10", "away_offense_iso_game_last_10_avg"],
+                "home_candidates": ["home_offense_ISO_last_10", "home_offense_iso_game_last_10_avg"],
+                "value_type": "float",
+            },
+        ],
+        "detail": [
+            {
+                "label": "Juegos previos L10",
+                "away_candidates": ["away_offense_games_played_last_10"],
+                "home_candidates": ["home_offense_games_played_last_10"],
+                "value_type": "integer",
+            },
+            {
+                "label": "Carreras anotadas prom. L10",
+                "away_candidates": ["away_offense_runs_scored_last_10_avg"],
+                "home_candidates": ["home_offense_runs_scored_last_10_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "AVG L10",
+                "away_candidates": ["away_offense_AVG_last_10", "away_offense_avg_game_last_10_avg"],
+                "home_candidates": ["home_offense_AVG_last_10", "home_offense_avg_game_last_10_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "OBP L10",
+                "away_candidates": ["away_offense_OBP_last_10", "away_offense_obp_game_last_10_avg"],
+                "home_candidates": ["home_offense_OBP_last_10", "home_offense_obp_game_last_10_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "SLG L10",
+                "away_candidates": ["away_offense_SLG_last_10", "away_offense_slg_game_last_10_avg"],
+                "home_candidates": ["home_offense_SLG_last_10", "home_offense_slg_game_last_10_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "Hits prom. L10",
+                "away_candidates": ["away_offense_hits_last_10", "away_offense_hits_last_10_avg"],
+                "home_candidates": ["home_offense_hits_last_10", "home_offense_hits_last_10_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "HR prom. L10",
+                "away_candidates": ["away_offense_home_runs_last_10", "away_offense_home_runs_last_10_avg"],
+                "home_candidates": ["home_offense_home_runs_last_10", "home_offense_home_runs_last_10_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "BB prom. L10",
+                "away_candidates": ["away_offense_walks_last_10", "away_offense_walks_last_10_avg"],
+                "home_candidates": ["home_offense_walks_last_10", "home_offense_walks_last_10_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "SO prom. L10",
+                "away_candidates": ["away_offense_strikeouts_last_10", "away_offense_strikeouts_last_10_avg"],
+                "home_candidates": ["home_offense_strikeouts_last_10", "home_offense_strikeouts_last_10_avg"],
+                "value_type": "float",
+            },
+        ],
+    },
     "Últimos 3": {
         "core": [
             {
@@ -279,6 +352,31 @@ OFFENSE_METRICS_BY_WINDOW = {
 }
 
 STARTER_METRICS_BY_WINDOW = {
+    "Temporada": {
+        "core": [
+            {
+                "label": "ERA temporada",
+                "away_candidates": ["away_starter_starter_season_era"],
+                "home_candidates": ["home_starter_starter_season_era"],
+                "value_type": "float",
+            },
+            {
+                "label": "Aperturas temporada",
+                "away_candidates": ["away_starter_starter_season_starts"],
+                "home_candidates": ["home_starter_starter_season_starts"],
+                "value_type": "integer",
+            },
+        ],
+        "detail": [
+            {"label": "Outs temporada", "away_candidates": ["away_starter_starter_season_outs"], "home_candidates": ["home_starter_starter_season_outs"], "value_type": "integer"},
+            {"label": "Innings temporada", "away_candidates": ["away_starter_starter_season_innings"], "home_candidates": ["home_starter_starter_season_innings"], "value_type": "float"},
+            {"label": "Hits permitidos temp.", "away_candidates": ["away_starter_starter_season_hits_allowed"], "home_candidates": ["home_starter_starter_season_hits_allowed"], "value_type": "integer"},
+            {"label": "ER temporada", "away_candidates": ["away_starter_starter_season_earned_runs"], "home_candidates": ["home_starter_starter_season_earned_runs"], "value_type": "integer"},
+            {"label": "BB temporada", "away_candidates": ["away_starter_starter_season_walks"], "home_candidates": ["home_starter_starter_season_walks"], "value_type": "integer"},
+            {"label": "K temporada", "away_candidates": ["away_starter_starter_season_strikeouts"], "home_candidates": ["home_starter_starter_season_strikeouts"], "value_type": "integer"},
+            {"label": "HR permitidos temp.", "away_candidates": ["away_starter_starter_season_home_runs_allowed"], "home_candidates": ["home_starter_starter_season_home_runs_allowed"], "value_type": "integer"},
+        ],
+    },
     "Últimos 5": {
         "core": [
             {
