@@ -32,7 +32,7 @@ def build_schedule_pipeline_for_date_range(
 
     df_team_logs = build_team_game_logs(df_games)
     validate_team_game_logs(df_team_logs, df_games)
-    df_team_logs = add_team_rolling_features(df_team_logs, windows=[3, 5])
+    df_team_logs = add_team_rolling_features(df_team_logs, windows=[3, 5, 10])
 
     df_snapshot = build_pregame_team_snapshot(df_games, df_team_logs)
 
