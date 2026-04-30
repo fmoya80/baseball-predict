@@ -443,6 +443,60 @@ STARTER_METRICS_BY_WINDOW = {
             },
         ],
     },
+    "Últimos 10": {
+        "core": [
+            {
+                "label": "ERA L10",
+                "away_candidates": ["away_starter_starter_season_era", "away_starter_era_last_5", "away_starter_era_last_3"],
+                "home_candidates": ["home_starter_starter_season_era", "home_starter_era_last_5", "home_starter_era_last_3"],
+                "value_type": "float",
+            },
+            {
+                "label": "K prom. L10",
+                "away_candidates": ["away_starter_strikeouts_last_5_avg", "away_starter_strikeouts_last_3_avg"],
+                "home_candidates": ["home_starter_strikeouts_last_5_avg", "home_starter_strikeouts_last_3_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "BB prom. L10",
+                "away_candidates": ["away_starter_walks_last_5_avg", "away_starter_walks_last_3_avg"],
+                "home_candidates": ["home_starter_walks_last_5_avg", "home_starter_walks_last_3_avg"],
+                "value_type": "float",
+            },
+        ],
+        "detail": [
+            {
+                "label": "Aperturas previas L10",
+                "away_candidates": ["away_starter_starter_season_starts", "away_starter_starts_count_last_5"],
+                "home_candidates": ["home_starter_starter_season_starts", "home_starter_starts_count_last_5"],
+                "value_type": "integer",
+            },
+            {
+                "label": "Outs lanzados prom. L10",
+                "away_candidates": ["away_starter_starter_season_outs", "away_starter_outs_recorded_last_5_avg"],
+                "home_candidates": ["home_starter_starter_season_outs", "home_starter_outs_recorded_last_5_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "Hits permitidos L10",
+                "away_candidates": ["away_starter_starter_season_hits_allowed", "away_starter_hits_allowed_last_5_avg"],
+                "home_candidates": ["home_starter_starter_season_hits_allowed", "home_starter_hits_allowed_last_5_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "ER L10",
+                "away_candidates": ["away_starter_starter_season_earned_runs", "away_starter_earned_runs_last_5_avg"],
+                "home_candidates": ["home_starter_starter_season_earned_runs", "home_starter_earned_runs_last_5_avg"],
+                "value_type": "float",
+            },
+            {
+                "label": "HR permitidos L10",
+                "away_candidates": ["away_starter_starter_season_home_runs_allowed", "away_starter_home_runs_allowed_last_5_avg"],
+                "home_candidates": ["home_starter_starter_season_home_runs_allowed", "home_starter_home_runs_allowed_last_5_avg"],
+                "value_type": "float",
+            },
+        ],
+    },
     "Últimos 3": {
         "core": [
             {
@@ -1086,17 +1140,17 @@ col_window_1, col_window_2 = st.columns(2)
 with col_window_1:
     selected_offense_window = st.radio(
         "Ofensiva",
-        options=["Temporada", "Últimos 5", "Últimos 3"],
+        options=["Temporada", "Últimos 10", "Últimos 5", "Últimos 3"],
         horizontal=True,
-        index=1,
+        index=2,
     )
 
 with col_window_2:
     selected_starter_window = st.radio(
         "Abridor",
-        options=["Últimos 5", "Últimos 3"],
+        options=["Temporada", "Últimos 10", "Últimos 5", "Últimos 3"],
         horizontal=True,
-        index=0,
+        index=2,
     )
 
 context_df = build_metric_section(df, matchup_row, CONTEXT_METRICS, away_display_name, home_display_name)
