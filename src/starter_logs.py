@@ -192,6 +192,10 @@ def add_starter_rolling_features(starter_game_logs: pd.DataFrame) -> pd.DataFram
     df = starter_game_logs.copy()
 
     df["game_date"] = pd.to_datetime(df["game_date"])
+    if "season" not in df.columns:
+        df["season"] = df["game_date"].dt.year
+
+    df["season"] = pd.to_numeric(df["season"], errors="coerce")
     df["innings_pitched_outs"] = df["innings_pitched"].apply(innings_pitched_to_outs)
 
     numeric_cols = [
@@ -239,6 +243,42 @@ def add_starter_rolling_features(starter_game_logs: pd.DataFrame) -> pd.DataFram
             grouped["gamePk"]
             .transform(lambda s: s.shift(1).rolling(window=window, min_periods=1).count())
         )
+
+    season_grouped = df.groupby(["pitcher_id", "season"], group_keys=False)
+
+    season_sum_metrics = [
+        "outs_recorded",
+        "hits_allowed",
+        "earned_runs",
+        "walks",
+        "strikeouts",
+        "home_runs_allowed",
+    ]
+
+    season_rename_map = {
+        "outs_recorded": "starter_season_outs",
+        "hits_allowed": "starter_season_hits_allowed",
+        "earned_runs": "starter_season_earned_runs",
+        "walks": "starter_season_walks",
+        "strikeouts": "starter_season_strikeouts",
+        "home_runs_allowed": "starter_season_home_runs_allowed",
+    }
+
+    df["starter_season_starts"] = (
+        season_grouped["gamePk"].transform(lambda s: s.expanding().count().shift(1))
+    )
+
+    for col in season_sum_metrics:
+        new_col = season_rename_map[col]
+        df[new_col] = season_grouped[col].transform(lambda s: s.cumsum().shift(1))
+
+    df["starter_season_innings"] = (df["starter_season_outs"] / 3).round(3)
+
+    df["starter_season_era"] = pd.NA
+    valid_outs_mask = df["starter_season_outs"].notna() & (df["starter_season_outs"] > 0)
+    df.loc[valid_outs_mask, "starter_season_era"] = (
+        27 * df.loc[valid_outs_mask, "starter_season_earned_runs"] / df.loc[valid_outs_mask, "starter_season_outs"]
+    ).round(3)
 
     return df
 

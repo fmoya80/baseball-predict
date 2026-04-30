@@ -221,7 +221,7 @@ def add_batting_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
         "total_bases",
     ]
 
-    windows = [3, 5]
+    windows = [3, 5, 10]
 
     for window in windows:
         # 1) métricas promedio por juego
@@ -313,6 +313,17 @@ def add_batting_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
         df[slg_col] = slg_values
         df[ops_col] = ops_values
         df[iso_col] = iso_values
+
+    # Alias explícitos para L10 solicitados en el master
+    df["AVG_last_10"] = df["avg_game_last_10_avg"]
+    df["OBP_last_10"] = df["obp_game_last_10_avg"]
+    df["SLG_last_10"] = df["slg_game_last_10_avg"]
+    df["OPS_last_10"] = df["ops_game_last_10_avg"]
+    df["ISO_last_10"] = df["iso_game_last_10_avg"]
+    df["hits_last_10"] = df["hits_last_10_avg"]
+    df["home_runs_last_10"] = df["home_runs_last_10_avg"]
+    df["walks_last_10"] = df["walks_last_10_avg"]
+    df["strikeouts_last_10"] = df["strikeouts_last_10_avg"]
 
     # 5) acumulados season-to-date pregame
     season_sum_metrics = [
