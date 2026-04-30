@@ -89,34 +89,16 @@ CONTEXT_METRICS = [
         "value_type": "text",
     },
     {
-        "label": "Starter con historial L3",
-        "away_candidates": ["away_starter_has_last_3_data_flag"],
-        "home_candidates": ["home_starter_has_last_3_data_flag"],
-        "value_type": "flag",
+        "label": "ERA temporada abridor",
+        "away_candidates": ["away_starter_starter_season_era"],
+        "home_candidates": ["home_starter_starter_season_era"],
+        "value_type": "float",
     },
     {
-        "label": "Starter con historial L5",
-        "away_candidates": ["away_starter_has_last_5_data_flag"],
-        "home_candidates": ["home_starter_has_last_5_data_flag"],
-        "value_type": "flag",
-    },
-    {
-        "label": "Contexto ofensivo disponible",
-        "away_candidates": ["away_offense_context_found_flag"],
-        "home_candidates": ["home_offense_context_found_flag"],
-        "value_type": "flag",
-    },
-    {
-        "label": "Ofensiva con historial L3",
-        "away_candidates": ["away_offense_has_last_3_data_flag"],
-        "home_candidates": ["home_offense_has_last_3_data_flag"],
-        "value_type": "flag",
-    },
-    {
-        "label": "Ofensiva con historial L5",
-        "away_candidates": ["away_offense_has_last_5_data_flag"],
-        "home_candidates": ["home_offense_has_last_5_data_flag"],
-        "value_type": "flag",
+        "label": "Aperturas temporada abridor",
+        "away_candidates": ["away_starter_starter_season_starts"],
+        "home_candidates": ["home_starter_starter_season_starts"],
+        "value_type": "integer",
     },
 ]
 
@@ -822,12 +804,22 @@ def build_games_table(df: pd.DataFrame) -> pd.DataFrame:
     if "gamePk" not in result.columns:
         raise KeyError("No encontre la columna gamePk en el dataset.")
 
-    return result[
-        ["gamePk", "away_team", "home_team", "away_pitcher", "home_pitcher", "status"]
+    result = result[
+        ["away_team", "home_team", "away_pitcher", "home_pitcher", "status", "gamePk"]
     ].sort_values(
         by=["away_team", "home_team", "gamePk"],
         ascending=[True, True, True],
     ).reset_index(drop=True)
+
+    return result.rename(
+        columns={
+            "away_team": "Equipo visitante",
+            "home_team": "Equipo local",
+            "away_pitcher": "Abridor visitante",
+            "home_pitcher": "Abridor local",
+            "status": "Estado",
+        }
+    )
 
 
 def build_flags_table(
@@ -1012,22 +1004,8 @@ except Exception as exc:
     st.exception(exc)
     st.stop()
 
-st.subheader("1. Estado del dataset")
-
-col_a, col_b, col_c = st.columns(3)
-
-with col_a:
-    st.metric("Filas", len(df))
-
-with col_b:
-    st.metric("Columnas", len(df.columns))
-
-with col_c:
-    if "gamePk" in df.columns:
-        st.metric("gamePk unicos", df["gamePk"].nunique())
-    else:
-        st.metric("gamePk unicos", "No encontrado")
-
+unique_games = df["gamePk"].nunique() if "gamePk" in df.columns else 0
+st.caption(f"Partidos únicos en dataset: **{unique_games}**")
 st.caption(f"Archivo usado: `{file_path}`")
 
 date_col = find_date_column(df)
@@ -1039,13 +1017,8 @@ if not available_dates:
     st.error("No hay fechas disponibles en el dataset.")
     st.stop()
 
-st.subheader("2. Selector de fecha")
-
-selected_date = st.selectbox(
-    "Selecciona una fecha",
-    options=available_dates,
-    index=0,
-)
+st.sidebar.header("Filtros")
+selected_date = st.sidebar.selectbox("Fecha", options=available_dates, index=0)
 
 df_day = df[df[date_col] == selected_date].copy()
 
@@ -1057,9 +1030,10 @@ if df_day.empty:
 
 games_table = build_games_table(df_day)
 
-st.subheader("3. Partidos del dia")
+st.subheader("1. Partidos del día")
+games_table_display = games_table.drop(columns=["gamePk"], errors="ignore")
 st.dataframe(
-    style_standard_table(games_table),
+    style_standard_table(games_table_display),
     use_container_width=True,
     hide_index=True,
 )
@@ -1070,17 +1044,15 @@ if "gamePk" not in df_day.columns:
 
 game_options_df = games_table.copy()
 game_options_df["label"] = (
-    game_options_df["away_team"]
+    game_options_df["Equipo visitante"]
     + " @ "
-    + game_options_df["home_team"]
-    + " | gamePk: "
-    + game_options_df["gamePk"]
+    + game_options_df["Equipo local"]
 )
 
 game_label_to_pk = dict(zip(game_options_df["label"], game_options_df["gamePk"]))
 
-selected_game_label = st.selectbox(
-    "Selecciona un partido",
+selected_game_label = st.sidebar.selectbox(
+    "Partido",
     options=game_options_df["label"].tolist(),
 )
 
@@ -1096,7 +1068,7 @@ matchup_header = build_matchup_header(df, matchup_row)
 away_display_name = matchup_header["away_team"]
 home_display_name = matchup_header["home_team"]
 
-st.subheader("4. Resumen del matchup")
+st.subheader("2. Resumen del matchup")
 
 col1, col2 = st.columns(2)
 
@@ -1108,7 +1080,6 @@ with col1:
     )
     st.write(f"**Away:** {away_display_name}")
     st.write(f"**Home:** {home_display_name}")
-    st.write(f"**gamePk:** {format_value(matchup_row['gamePk'], 'integer')}")
     st.write(f"**Fecha:** {format_value(matchup_row[date_col])}")
 
 with col2:
@@ -1122,36 +1093,21 @@ with col2:
     st.write(f"**Pitcher probable home:** {matchup_header['home_pitcher']}")
     st.write(f"**Estado:** {matchup_header['status']}")
 
-st.subheader("5. Flags de cobertura de datos")
-
-flags_df = build_flags_table(df, matchup_row, away_display_name, home_display_name)
-
-if flags_df.empty:
-    st.info("No encontre columnas de flags de disponibilidad o usabilidad en este dataset.")
-else:
-    st.dataframe(style_standard_table(flags_df), use_container_width=True, hide_index=True)
-
-st.subheader("6. Matchup pregame")
+st.subheader("3. Matchup pregame")
 
 st.markdown("### Ventanas de comparacion")
 
-col_window_1, col_window_2 = st.columns(2)
+selected_offense_window = st.sidebar.radio(
+    "Ventana ofensiva",
+    options=["Temporada", "Últimos 10", "Últimos 5", "Últimos 3"],
+    index=2,
+)
 
-with col_window_1:
-    selected_offense_window = st.radio(
-        "Ofensiva",
-        options=["Temporada", "Últimos 10", "Últimos 5", "Últimos 3"],
-        horizontal=True,
-        index=2,
-    )
-
-with col_window_2:
-    selected_starter_window = st.radio(
-        "Abridor",
-        options=["Temporada", "Últimos 10", "Últimos 5", "Últimos 3"],
-        horizontal=True,
-        index=2,
-    )
+selected_starter_window = st.sidebar.radio(
+    "Ventana abridor",
+    options=["Temporada", "Últimos 10", "Últimos 5", "Últimos 3"],
+    index=2,
+)
 
 context_df = build_metric_section(df, matchup_row, CONTEXT_METRICS, away_display_name, home_display_name)
 
@@ -1188,14 +1144,14 @@ starter_detail_df = build_metric_section(
 )
 
 render_section_header(
-    "6.1",
+    "3.1",
     "Contexto general",
-    "Cobertura de datos disponible para el partido y disponibilidad reciente de equipos y abridores.",
+    "Identidad de equipos y abridores con contexto inmediato del starter.",
 )
 st.dataframe(style_comparison_table(context_df), use_container_width=True, hide_index=True)
 
 render_section_header(
-    "6.2",
+    "3.2",
     f"Ofensiva | {selected_offense_window}",
     "Comparacion principal de produccion y poder ofensivo segun la ventana seleccionada.",
 )
@@ -1209,7 +1165,7 @@ with st.expander(f"Ver detalle ofensivo | {selected_offense_window}"):
     )
 
 render_section_header(
-    "6.3",
+    "3.3",
     f"Abridor | {selected_starter_window}",
     "Comparacion principal del abridor probable segun la ventana seleccionada.",
     accent="red",
