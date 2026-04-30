@@ -49,6 +49,7 @@ def build_required_intermediate_files(start_date: str, end_date: str) -> None:
     build_schedule_pipeline_for_date_range(
         start_date=start_date,
         end_date=end_date,
+        context_start_date=INITIAL_HISTORICAL_START_DATE,
         save_output=True,
         verbose=True,
     )
@@ -68,15 +69,6 @@ def build_required_intermediate_files(start_date: str, end_date: str) -> None:
     target_paths = get_pipeline_paths(
         start_date=start_date,
         end_date=end_date,
-    )
-
-    print("Construyendo schedule de contexto para starter...")
-
-    build_schedule_pipeline_for_date_range(
-        start_date=context_start_date,
-        end_date=end_date,
-        save_output=True,
-        verbose=True,
     )
 
     build_starter_logs_file(
@@ -101,15 +93,6 @@ def build_required_intermediate_files(start_date: str, end_date: str) -> None:
     target_paths = get_pipeline_paths(
         start_date=start_date,
         end_date=end_date,
-    )
-
-    print("Construyendo schedule de contexto para batting...")
-
-    build_schedule_pipeline_for_date_range(
-        start_date=context_start_date,
-        end_date=end_date,
-        save_output=True,
-        verbose=True,
     )
 
     build_team_batting_logs_file(

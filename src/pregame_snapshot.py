@@ -44,6 +44,13 @@ def build_pregame_team_snapshot(games_df: pd.DataFrame, team_logs_df: pd.DataFra
         "run_diff_last_5_avg",
         "wins_last_5",
         "win_pct_last_5",
+        "wins_last_10",
+        "games_played_last_10",
+        "season_wins",
+        "season_losses",
+        "season_win_pct",
+        "league",
+        "league_position",
         "team_game_number",
     ]
 
@@ -64,6 +71,13 @@ def build_pregame_team_snapshot(games_df: pd.DataFrame, team_logs_df: pd.DataFra
             "run_diff_last_5_avg": "away_run_diff_last_5_avg",
             "wins_last_5": "away_wins_last_5",
             "win_pct_last_5": "away_win_pct_last_5",
+            "wins_last_10": "away_wins_last_10",
+            "games_played_last_10": "away_games_played_last_10",
+            "season_wins": "away_season_wins",
+            "season_losses": "away_season_losses",
+            "season_win_pct": "away_season_win_pct",
+            "league": "away_league",
+            "league_position": "away_league_position",
             "team_game_number": "away_team_game_number",
         }
     )
@@ -83,6 +97,13 @@ def build_pregame_team_snapshot(games_df: pd.DataFrame, team_logs_df: pd.DataFra
             "run_diff_last_5_avg": "home_run_diff_last_5_avg",
             "wins_last_5": "home_wins_last_5",
             "win_pct_last_5": "home_win_pct_last_5",
+            "wins_last_10": "home_wins_last_10",
+            "games_played_last_10": "home_games_played_last_10",
+            "season_wins": "home_season_wins",
+            "season_losses": "home_season_losses",
+            "season_win_pct": "home_season_win_pct",
+            "league": "home_league",
+            "league_position": "home_league_position",
             "team_game_number": "home_team_game_number",
         }
     )
