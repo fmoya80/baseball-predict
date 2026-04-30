@@ -4,6 +4,14 @@ import pandas as pd
 from src.config import GAMES_SCHEDULE_FILE, TEAM_GAME_LOGS_FILE
 
 DEFAULT_OUTPUT_DIR = TEAM_GAME_LOGS_FILE.parent
+TEAM_LEAGUE_BY_ID = {
+    108: "AL", 109: "AL", 110: "AL", 111: "AL", 112: "AL",
+    113: "NL", 114: "AL", 115: "NL", 116: "AL", 117: "AL",
+    118: "NL", 119: "NL", 120: "NL", 121: "NL", 133: "AL",
+    134: "AL", 135: "NL", 136: "AL", 137: "NL", 138: "NL",
+    139: "AL", 140: "AL", 141: "AL", 142: "AL", 143: "NL",
+    144: "NL", 145: "AL", 146: "NL", 147: "AL", 158: "NL",
+}
 
 
 def load_games_schedule() -> pd.DataFrame:
@@ -118,7 +126,7 @@ def validate_team_game_logs(team_logs_df: pd.DataFrame, games_df: pd.DataFrame) 
         raise ValueError(f"Hay duplicados en gamePk + team_id:\n{dupes}")
 
 
-def add_team_rolling_features(team_logs_df: pd.DataFrame, windows: list[int] = [3, 5]) -> pd.DataFrame:
+def add_team_rolling_features(team_logs_df: pd.DataFrame, windows: list[int] = [3, 5, 10]) -> pd.DataFrame:
     """
     Agrega features rolling por equipo usando solo juegos anteriores.
     Solo considera juegos finales para construir el histórico.
@@ -132,6 +140,7 @@ def add_team_rolling_features(team_logs_df: pd.DataFrame, windows: list[int] = [
 
     # contador de juegos por equipo
     df["team_game_number"] = df.groupby("team_id").cumcount() + 1
+    df["league"] = df["team_id"].map(TEAM_LEAGUE_BY_ID)
 
     # diferencial de carreras del juego
     df["run_diff"] = df["runs_scored"] - df["runs_allowed"]
@@ -171,6 +180,20 @@ def add_team_rolling_features(team_logs_df: pd.DataFrame, windows: list[int] = [
             df[f"wins_last_{window}"] / df[f"games_played_last_{window}"]
         )
 
+    df["season_wins"] = group["win_flag_for_rolling"].transform(
+        lambda s: s.shift(1).expanding(min_periods=1).sum()
+    )
+    df["season_games_played"] = group["win_flag_for_rolling"].transform(
+        lambda s: s.shift(1).expanding(min_periods=1).count()
+    )
+    df["season_losses"] = df["season_games_played"] - df["season_wins"]
+    df["season_win_pct"] = df["season_wins"] / df["season_games_played"]
+
+    df["league_position"] = (
+        df.groupby(["game_date", "league"])["season_win_pct"]
+        .rank(method="dense", ascending=False)
+    )
+
     return df
 
 
@@ -191,7 +214,7 @@ def main():
 
     team_logs_df = build_team_game_logs(games_df)
     validate_team_game_logs(team_logs_df, games_df)
-    team_logs_df = add_team_rolling_features(team_logs_df, windows=[3, 5])
+    team_logs_df = add_team_rolling_features(team_logs_df, windows=[3, 5, 10])
 
     output_path = save_team_game_logs(team_logs_df, TEAM_GAME_LOGS_FILE)
 

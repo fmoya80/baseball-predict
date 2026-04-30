@@ -89,6 +89,36 @@ CONTEXT_METRICS = [
         "value_type": "text",
     },
     {
+        "label": "Liga",
+        "away_candidates": ["away_league"],
+        "home_candidates": ["home_league"],
+        "value_type": "text",
+    },
+    {
+        "label": "Record temporada del equipo",
+        "away_candidates": ["away_team_season_record"],
+        "home_candidates": ["home_team_season_record"],
+        "value_type": "text",
+    },
+    {
+        "label": "Record U10",
+        "away_candidates": ["away_team_u10_record"],
+        "home_candidates": ["home_team_u10_record"],
+        "value_type": "text",
+    },
+    {
+        "label": "Posicion en su liga",
+        "away_candidates": ["away_league_position"],
+        "home_candidates": ["home_league_position"],
+        "value_type": "integer",
+    },
+    {
+        "label": "% de victorias de la temporada",
+        "away_candidates": ["away_season_win_pct"],
+        "home_candidates": ["home_season_win_pct"],
+        "value_type": "float",
+    },
+    {
         "label": "ERA temporada abridor",
         "away_candidates": ["away_starter_starter_season_era"],
         "home_candidates": ["home_starter_starter_season_era"],
@@ -982,6 +1012,22 @@ def render_metric_cards(section_df: pd.DataFrame, away_label: str, home_label: s
         )
 
 
+def build_league_table(df: pd.DataFrame, matchup_row: pd.Series) -> pd.DataFrame:
+    game_date = matchup_row.get("game_date")
+    league = matchup_row.get("away_league")
+    league_df = df[(df["game_date"] == game_date) & (df["away_league"] == league)].copy()
+    cols = ["away_team_name", "away_team_season_record", "away_team_u10_record", "away_season_win_pct", "away_league_position"]
+    league_df = league_df[cols].drop_duplicates(subset=["away_team_name"]).sort_values("away_league_position")
+    league_df = league_df.rename(columns={
+        "away_team_name": "Equipo",
+        "away_team_season_record": "Record temporada",
+        "away_team_u10_record": "Record U10",
+        "away_season_win_pct": "% victorias",
+        "away_league_position": "Posición liga",
+    })
+    return league_df
+
+
 inject_theme_styles()
 
 st.title("Baseball Predict")
@@ -1010,6 +1056,28 @@ st.caption(f"Archivo usado: `{file_path}`")
 
 date_col = find_date_column(df)
 df[date_col] = pd.to_datetime(df[date_col], errors="coerce").dt.date
+if {"away_season_wins", "away_season_losses"}.issubset(df.columns):
+    df["away_team_season_record"] = (
+        df["away_season_wins"].fillna(0).astype(int).astype(str)
+        + "-"
+        + df["away_season_losses"].fillna(0).astype(int).astype(str)
+    )
+    df["home_team_season_record"] = (
+        df["home_season_wins"].fillna(0).astype(int).astype(str)
+        + "-"
+        + df["home_season_losses"].fillna(0).astype(int).astype(str)
+    )
+if {"away_wins_last_10", "away_games_played_last_10"}.issubset(df.columns):
+    df["away_team_u10_record"] = (
+        df["away_wins_last_10"].fillna(0).astype(int).astype(str)
+        + "-"
+        + (df["away_games_played_last_10"].fillna(0) - df["away_wins_last_10"].fillna(0)).astype(int).astype(str)
+    )
+    df["home_team_u10_record"] = (
+        df["home_wins_last_10"].fillna(0).astype(int).astype(str)
+        + "-"
+        + (df["home_games_played_last_10"].fillna(0) - df["home_wins_last_10"].fillna(0)).astype(int).astype(str)
+    )
 
 available_dates = sorted(df[date_col].dropna().unique())
 
@@ -1146,9 +1214,11 @@ starter_detail_df = build_metric_section(
 render_section_header(
     "3.1",
     "Contexto general",
-    "Identidad de equipos y abridores con contexto inmediato del starter.",
+    "Record temporada del equipo, Record U10, Posicion en su liga y % de victorias.",
 )
 st.dataframe(style_comparison_table(context_df), use_container_width=True, hide_index=True)
+st.markdown("#### Tabla por liga (equipo away)")
+st.dataframe(style_standard_table(build_league_table(df, matchup_row)), use_container_width=True, hide_index=True)
 
 render_section_header(
     "3.2",
