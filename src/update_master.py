@@ -9,11 +9,12 @@ from src.pipeline_paths import (
     INITIAL_HISTORICAL_START_DATE,
     INCREMENTAL_LOOKBACK_DAYS,
     INCREMENTAL_LOOKAHEAD_DAYS,
+    get_pipeline_paths,
 )
 from src.pregame_features_game import build_pregame_features_game_for_date_range
 from src.run_schedule import build_schedule_pipeline_for_date_range
-from src.starter_logs import build_starter_logs_file_for_date_range
-from src.team_batting_logs import build_team_batting_logs_file_for_date_range
+from src.starter_logs import build_starter_logs_file
+from src.team_batting_logs import build_team_batting_logs_file
 
 
 DATA_DIR = PROCESSED_DIR
@@ -52,20 +53,68 @@ def build_required_intermediate_files(start_date: str, end_date: str) -> None:
         verbose=True,
     )
 
-    print("Construyendo starter_game_logs para la ventana...")
+    print("Construyendo starter_game_logs con contexto histórico...")
 
-    build_starter_logs_file_for_date_range(
+    context_start_date = INITIAL_HISTORICAL_START_DATE
+
+    print(f"Rango contexto starter: {context_start_date} -> {end_date}")
+    print(f"Salida starter para ventana objetivo: {start_date} -> {end_date}")
+
+    context_paths = get_pipeline_paths(
+        start_date=context_start_date,
+        end_date=end_date,
+    )
+
+    target_paths = get_pipeline_paths(
         start_date=start_date,
+        end_date=end_date,
+    )
+
+    print("Construyendo schedule de contexto para starter...")
+
+    build_schedule_pipeline_for_date_range(
+        start_date=context_start_date,
         end_date=end_date,
         save_output=True,
         verbose=True,
     )
 
-    print("Construyendo team_batting_logs para la ventana...")
+    build_starter_logs_file(
+        games_schedule_file=context_paths["games_schedule_file"],
+        output_file=target_paths["starter_game_logs_file"],
+        save_output=True,
+        verbose=True,
+    )
 
-    build_team_batting_logs_file_for_date_range(
+    print("Construyendo team_batting_logs con contexto histórico...")
+
+    context_start_date = INITIAL_HISTORICAL_START_DATE
+
+    print(f"Rango contexto batting: {context_start_date} -> {end_date}")
+    print(f"Salida batting para ventana objetivo: {start_date} -> {end_date}")
+
+    context_paths = get_pipeline_paths(
+        start_date=context_start_date,
+        end_date=end_date,
+    )
+
+    target_paths = get_pipeline_paths(
         start_date=start_date,
         end_date=end_date,
+    )
+
+    print("Construyendo schedule de contexto para batting...")
+
+    build_schedule_pipeline_for_date_range(
+        start_date=context_start_date,
+        end_date=end_date,
+        save_output=True,
+        verbose=True,
+    )
+
+    build_team_batting_logs_file(
+        games_schedule_file=context_paths["games_schedule_file"],
+        output_file=target_paths["team_batting_logs_file"],
         save_output=True,
         verbose=True,
     )
