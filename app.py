@@ -1199,10 +1199,7 @@ matchup_header = build_matchup_header(df, matchup_row)
 away_display_name = matchup_header["away_team"]
 home_display_name = matchup_header["home_team"]
 
-tab_resumen, tab_evolutivo = st.tabs(["2. Resumen del matchup", "Pestaña 2 | Evolutivo de carreras"])
-
-with tab_resumen:
-    col1, col2 = st.columns(2)
+col1, col2 = st.columns(2)
 
     with col1:
         render_section_header(
@@ -1334,14 +1331,10 @@ with tab_evolutivo:
 
         st.line_chart(plot_df, use_container_width=True)
 
-        detail_df = pd.DataFrame(
-            {
-                "Equipo": [away_display_name, home_display_name],
-                "Promedio temporada (actual)": [
-                    format_value(away_trend["season_avg_runs"].iloc[-1], "float"),
-                    format_value(home_trend["season_avg_runs"].iloc[-1], "float"),
-                ],
-                "Juegos usados": [len(away_trend), len(home_trend)],
-            }
-        )
-        st.dataframe(style_standard_table(detail_df), use_container_width=True, hide_index=True)
+with st.expander(f"Ver detalle del abridor | {selected_starter_window}"):
+    st.dataframe(
+        style_comparison_table(starter_detail_df),
+        use_container_width=True,
+        hide_index=True,
+    )
+
