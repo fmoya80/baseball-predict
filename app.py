@@ -50,6 +50,16 @@ GAME_TABLE_FIELDS = [
         ],
         "text",
     ),
+    (
+        "away_runs_last_10",
+        ["away_offense_runs_scored_last_10_avg", "away_runs_scored_last_10_avg"],
+        "float",
+    ),
+    (
+        "home_runs_last_10",
+        ["home_offense_runs_scored_last_10_avg", "home_runs_scored_last_10_avg"],
+        "float",
+    ),
 ]
 
 FLAG_FIELDS = [
@@ -835,7 +845,16 @@ def build_games_table(df: pd.DataFrame) -> pd.DataFrame:
         raise KeyError("No encontre la columna gamePk en el dataset.")
 
     result = result[
-        ["away_team", "home_team", "away_pitcher", "home_pitcher", "status", "gamePk"]
+        [
+            "away_team",
+            "home_team",
+            "away_pitcher",
+            "home_pitcher",
+            "away_runs_last_10",
+            "home_runs_last_10",
+            "status",
+            "gamePk",
+        ]
     ].sort_values(
         by=["away_team", "home_team", "gamePk"],
         ascending=[True, True, True],
@@ -847,6 +866,8 @@ def build_games_table(df: pd.DataFrame) -> pd.DataFrame:
             "home_team": "Equipo local",
             "away_pitcher": "Abridor visitante",
             "home_pitcher": "Abridor local",
+            "away_runs_last_10": "Carreras prom. visitante (U10)",
+            "home_runs_last_10": "Carreras prom. local (U10)",
             "status": "Estado",
         }
     )
@@ -1028,6 +1049,48 @@ def build_league_table(df: pd.DataFrame, matchup_row: pd.Series) -> pd.DataFrame
     return league_df
 
 
+def build_team_scoring_trend(
+    df: pd.DataFrame,
+    team_name: str,
+    date_col: str,
+) -> pd.DataFrame:
+    """
+    Construye el evolutivo de carreras por partido de un equipo y su promedio acumulado.
+    """
+    away_team_col = find_column(df, ["away_team_name", "away_name", "away_team", "team_away_name"])
+    home_team_col = find_column(df, ["home_team_name", "home_name", "home_team", "team_home_name"])
+    away_runs_col = find_column(df, ["away_score", "away_runs", "away_final_score", "away_team_score"])
+    home_runs_col = find_column(df, ["home_score", "home_runs", "home_final_score", "home_team_score"])
+
+    if away_team_col is None or home_team_col is None or away_runs_col is None or home_runs_col is None:
+        return pd.DataFrame()
+
+    base_cols = ["gamePk", date_col, away_team_col, home_team_col, away_runs_col, home_runs_col]
+    games = df[base_cols].drop_duplicates(subset=["gamePk"]).copy()
+    games[date_col] = pd.to_datetime(games[date_col], errors="coerce")
+
+    away_games = games[[date_col, "gamePk", away_team_col, away_runs_col]].rename(
+        columns={away_team_col: "team_name", away_runs_col: "runs_scored"}
+    )
+    home_games = games[[date_col, "gamePk", home_team_col, home_runs_col]].rename(
+        columns={home_team_col: "team_name", home_runs_col: "runs_scored"}
+    )
+
+    team_games = pd.concat([away_games, home_games], ignore_index=True)
+    team_games = team_games[team_games["team_name"] == team_name].copy()
+    team_games = team_games.sort_values([date_col, "gamePk"]).reset_index(drop=True)
+
+    if team_games.empty:
+        return team_games
+
+    team_games["runs_scored"] = pd.to_numeric(team_games["runs_scored"], errors="coerce")
+    team_games = team_games.dropna(subset=["runs_scored"])
+    team_games["game_number"] = range(1, len(team_games) + 1)
+    team_games["season_avg_runs"] = team_games["runs_scored"].expanding(min_periods=1).mean()
+
+    return team_games
+
+
 inject_theme_styles()
 
 st.title("Baseball Predict")
@@ -1136,115 +1199,149 @@ matchup_header = build_matchup_header(df, matchup_row)
 away_display_name = matchup_header["away_team"]
 home_display_name = matchup_header["home_team"]
 
-st.subheader("2. Resumen del matchup")
+tab_resumen, tab_evolutivo = st.tabs(["2. Resumen del matchup", "Pestaña 2 | Evolutivo de carreras"])
 
-col1, col2 = st.columns(2)
+with tab_resumen:
+    col1, col2 = st.columns(2)
 
-with col1:
-    render_section_header(
-        "Matchup",
-        "Equipos",
-        "Vista rapida del partido seleccionado y su identificacion base.",
+    with col1:
+        render_section_header(
+            "Matchup",
+            "Equipos",
+            "Vista rapida del partido seleccionado y su identificacion base.",
+        )
+        st.write(f"**Away:** {away_display_name}")
+        st.write(f"**Home:** {home_display_name}")
+        st.write(f"**Fecha:** {format_value(matchup_row[date_col])}")
+
+    with col2:
+        render_section_header(
+            "Pregame",
+            "Contexto base",
+            "Lectura inicial del estado del juego y los abridores probables.",
+            accent="red",
+        )
+        st.write(f"**Pitcher probable away:** {matchup_header['away_pitcher']}")
+        st.write(f"**Pitcher probable home:** {matchup_header['home_pitcher']}")
+        st.write(f"**Estado:** {matchup_header['status']}")
+
+    st.subheader("3. Matchup pregame")
+
+    st.markdown("### Ventanas de comparacion")
+
+    selected_offense_window = st.sidebar.radio(
+        "Ventana ofensiva",
+        options=["Temporada", "Últimos 10", "Últimos 5", "Últimos 3"],
+        index=2,
     )
-    st.write(f"**Away:** {away_display_name}")
-    st.write(f"**Home:** {home_display_name}")
-    st.write(f"**Fecha:** {format_value(matchup_row[date_col])}")
 
-with col2:
+    selected_starter_window = st.sidebar.radio(
+        "Ventana abridor",
+        options=["Temporada", "Últimos 10", "Últimos 5", "Últimos 3"],
+        index=2,
+    )
+
+    context_df = build_metric_section(df, matchup_row, CONTEXT_METRICS, away_display_name, home_display_name)
+
+    offense_core_df = build_metric_section(
+        df,
+        matchup_row,
+        OFFENSE_METRICS_BY_WINDOW[selected_offense_window]["core"],
+        away_display_name,
+        home_display_name,
+    )
+
+    offense_detail_df = build_metric_section(
+        df,
+        matchup_row,
+        OFFENSE_METRICS_BY_WINDOW[selected_offense_window]["detail"],
+        away_display_name,
+        home_display_name,
+    )
+
+    starter_core_df = build_metric_section(
+        df,
+        matchup_row,
+        STARTER_METRICS_BY_WINDOW[selected_starter_window]["core"],
+        away_display_name,
+        home_display_name,
+    )
+
+    starter_detail_df = build_metric_section(
+        df,
+        matchup_row,
+        STARTER_METRICS_BY_WINDOW[selected_starter_window]["detail"],
+        away_display_name,
+        home_display_name,
+    )
+
     render_section_header(
-        "Pregame",
-        "Contexto base",
-        "Lectura inicial del estado del juego y los abridores probables.",
+        "3.1",
+        "Contexto general",
+        "Record temporada del equipo, Record U10, Posicion en su liga y % de victorias.",
+    )
+    st.dataframe(style_comparison_table(context_df), use_container_width=True, hide_index=True)
+    st.markdown("#### Tabla por liga (equipo away)")
+    st.dataframe(style_standard_table(build_league_table(df, matchup_row)), use_container_width=True, hide_index=True)
+
+    render_section_header(
+        "3.2",
+        f"Ofensiva | {selected_offense_window}",
+        "Comparacion principal de produccion y poder ofensivo segun la ventana seleccionada.",
+    )
+    render_metric_cards(offense_core_df, away_display_name, home_display_name)
+
+    with st.expander(f"Ver detalle ofensivo | {selected_offense_window}"):
+        st.dataframe(
+            style_comparison_table(offense_detail_df),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+    render_section_header(
+        "3.3",
+        f"Abridor | {selected_starter_window}",
+        "Comparacion principal del abridor probable segun la ventana seleccionada.",
         accent="red",
     )
-    st.write(f"**Pitcher probable away:** {matchup_header['away_pitcher']}")
-    st.write(f"**Pitcher probable home:** {matchup_header['home_pitcher']}")
-    st.write(f"**Estado:** {matchup_header['status']}")
+    render_metric_cards(starter_core_df, away_display_name, home_display_name)
 
-st.subheader("3. Matchup pregame")
+    with st.expander(f"Ver detalle del abridor | {selected_starter_window}"):
+        st.dataframe(
+            style_comparison_table(starter_detail_df),
+            use_container_width=True,
+            hide_index=True,
+        )
 
-st.markdown("### Ventanas de comparacion")
+with tab_evolutivo:
+    st.subheader("Evolutivo de carreras por partido (temporada)")
+    st.caption("Para el partido seleccionado, se muestra el promedio acumulado de carreras anotadas por cada equipo.")
 
-selected_offense_window = st.sidebar.radio(
-    "Ventana ofensiva",
-    options=["Temporada", "Últimos 10", "Últimos 5", "Últimos 3"],
-    index=2,
-)
+    away_trend = build_team_scoring_trend(df, away_display_name, date_col)
+    home_trend = build_team_scoring_trend(df, home_display_name, date_col)
 
-selected_starter_window = st.sidebar.radio(
-    "Ventana abridor",
-    options=["Temporada", "Últimos 10", "Últimos 5", "Últimos 3"],
-    index=2,
-)
+    if away_trend.empty or home_trend.empty:
+        st.warning("No hay columnas de score disponibles para construir el evolutivo de carreras.")
+    else:
+        away_plot = away_trend[["game_number", "season_avg_runs"]].rename(
+            columns={"season_avg_runs": away_display_name}
+        )
+        home_plot = home_trend[["game_number", "season_avg_runs"]].rename(
+            columns={"season_avg_runs": home_display_name}
+        )
+        plot_df = away_plot.merge(home_plot, on="game_number", how="outer").sort_values("game_number")
+        plot_df = plot_df.set_index("game_number")
 
-context_df = build_metric_section(df, matchup_row, CONTEXT_METRICS, away_display_name, home_display_name)
+        st.line_chart(plot_df, use_container_width=True)
 
-offense_core_df = build_metric_section(
-    df,
-    matchup_row,
-    OFFENSE_METRICS_BY_WINDOW[selected_offense_window]["core"],
-    away_display_name,
-    home_display_name,
-)
-
-offense_detail_df = build_metric_section(
-    df,
-    matchup_row,
-    OFFENSE_METRICS_BY_WINDOW[selected_offense_window]["detail"],
-    away_display_name,
-    home_display_name,
-)
-
-starter_core_df = build_metric_section(
-    df,
-    matchup_row,
-    STARTER_METRICS_BY_WINDOW[selected_starter_window]["core"],
-    away_display_name,
-    home_display_name,
-)
-
-starter_detail_df = build_metric_section(
-    df,
-    matchup_row,
-    STARTER_METRICS_BY_WINDOW[selected_starter_window]["detail"],
-    away_display_name,
-    home_display_name,
-)
-
-render_section_header(
-    "3.1",
-    "Contexto general",
-    "Record temporada del equipo, Record U10, Posicion en su liga y % de victorias.",
-)
-st.dataframe(style_comparison_table(context_df), use_container_width=True, hide_index=True)
-st.markdown("#### Tabla por liga (equipo away)")
-st.dataframe(style_standard_table(build_league_table(df, matchup_row)), use_container_width=True, hide_index=True)
-
-render_section_header(
-    "3.2",
-    f"Ofensiva | {selected_offense_window}",
-    "Comparacion principal de produccion y poder ofensivo segun la ventana seleccionada.",
-)
-render_metric_cards(offense_core_df, away_display_name, home_display_name)
-
-with st.expander(f"Ver detalle ofensivo | {selected_offense_window}"):
-    st.dataframe(
-        style_comparison_table(offense_detail_df),
-        use_container_width=True,
-        hide_index=True,
-    )
-
-render_section_header(
-    "3.3",
-    f"Abridor | {selected_starter_window}",
-    "Comparacion principal del abridor probable segun la ventana seleccionada.",
-    accent="red",
-)
-render_metric_cards(starter_core_df, away_display_name, home_display_name)
-
-with st.expander(f"Ver detalle del abridor | {selected_starter_window}"):
-    st.dataframe(
-        style_comparison_table(starter_detail_df),
-        use_container_width=True,
-        hide_index=True,
-    )
+        detail_df = pd.DataFrame(
+            {
+                "Equipo": [away_display_name, home_display_name],
+                "Promedio temporada (actual)": [
+                    format_value(away_trend["season_avg_runs"].iloc[-1], "float"),
+                    format_value(home_trend["season_avg_runs"].iloc[-1], "float"),
+                ],
+                "Juegos usados": [len(away_trend), len(home_trend)],
+            }
+        )
+        st.dataframe(style_standard_table(detail_df), use_container_width=True, hide_index=True)
