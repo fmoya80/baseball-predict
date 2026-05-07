@@ -50,6 +50,16 @@ GAME_TABLE_FIELDS = [
         ],
         "text",
     ),
+    (
+        "away_runs_last_10",
+        ["away_offense_runs_scored_last_10_avg", "away_runs_scored_last_10_avg"],
+        "float",
+    ),
+    (
+        "home_runs_last_10",
+        ["home_offense_runs_scored_last_10_avg", "home_runs_scored_last_10_avg"],
+        "float",
+    ),
 ]
 
 FLAG_FIELDS = [
@@ -835,7 +845,16 @@ def build_games_table(df: pd.DataFrame) -> pd.DataFrame:
         raise KeyError("No encontre la columna gamePk en el dataset.")
 
     result = result[
-        ["away_team", "home_team", "away_pitcher", "home_pitcher", "status", "gamePk"]
+        [
+            "away_team",
+            "home_team",
+            "away_pitcher",
+            "home_pitcher",
+            "away_runs_last_10",
+            "home_runs_last_10",
+            "status",
+            "gamePk",
+        ]
     ].sort_values(
         by=["away_team", "home_team", "gamePk"],
         ascending=[True, True, True],
@@ -847,6 +866,8 @@ def build_games_table(df: pd.DataFrame) -> pd.DataFrame:
             "home_team": "Equipo local",
             "away_pitcher": "Abridor visitante",
             "home_pitcher": "Abridor local",
+            "away_runs_last_10": "Carreras prom. visitante (U10)",
+            "home_runs_last_10": "Carreras prom. local (U10)",
             "status": "Estado",
         }
     )
@@ -1136,8 +1157,6 @@ matchup_header = build_matchup_header(df, matchup_row)
 away_display_name = matchup_header["away_team"]
 home_display_name = matchup_header["home_team"]
 
-st.subheader("2. Resumen del matchup")
-
 col1, col2 = st.columns(2)
 
 with col1:
@@ -1248,3 +1267,4 @@ with st.expander(f"Ver detalle del abridor | {selected_starter_window}"):
         use_container_width=True,
         hide_index=True,
     )
+
